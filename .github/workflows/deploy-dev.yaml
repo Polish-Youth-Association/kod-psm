@@ -1,54 +1,65 @@
-name: Deploy apps to DEV
+name: Deploy to DEV
 
 on:
   push:
     branches:
       - dev
 
+env:
+  GCP_REGION: us-central1
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_DEV }}
+  IMAGE_REPO: apps
+
 jobs:
   deploy-dev:
+    name: Build & Deploy Changed Apps (DEV)
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       id-token: write
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Authenticate to GCP via Workload Identity
+      - name: Authenticate to GCP (DEV)
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_DEV }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_DEV }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT_DEV }}
 
-      - name: Setup gcloud SDK
+      - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
 
-      - name: Get changed files
-        id: changes
+      - name: Determine changed files
+        id: changed
         run: |
           git fetch --unshallow || true
 
-          echo "HEAD revision:"
-          git rev-parse HEAD
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
 
-          # If there is a previous commit, diff HEAD^..HEAD; otherwise, treat all files as changed
-          if git rev-parse HEAD^ >/dev/null 2>&1; then
-            echo "Using diff: HEAD^..HEAD"
-            git diff --name-only HEAD^ HEAD > changed_files.txt
+          echo "Before: $BEFORE"
+          echo "After:  $AFTER"
+
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # First push on branch: just look at this commit
+            git diff --name-only "$AFTER" > changed_files.txt || echo "" > changed_files.txt
           else
-            echo "No parent commit (first commit on branch). Using HEAD only."
-            git diff --name-only HEAD > changed_files.txt
+            git diff --name-only "$BEFORE" "$AFTER" > changed_files.txt || echo "" > changed_files.txt
           fi
 
           echo "Changed files:"
           cat changed_files.txt || true
 
-      - name: Deploy changed apps
+          echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Build & Deploy new-member-onboarding-app if changed
         run: |
           CHANGED_PATHS=$(cat changed_files.txt || echo "")
-
           if [ -z "$CHANGED_PATHS" ]; then
             echo "No changed files detected. Skipping deploy."
             exit 0
@@ -57,41 +68,25 @@ jobs:
           echo "Changed paths:"
           echo "$CHANGED_PATHS"
 
-          # Map app directories in repo -> Cloud Run service names
-          declare -A app_map
-
-          # ====== REGISTER APPS HERE ======
-          # Example:
-          # app_map["domains/memberships/membership-app"]="membership-app"
-          # app_map["domains/finance/reimbursements-app"]="reimbursements-app"
-
-          # TODO: add your real apps to this mapping
-          app_map["domains/memberships/new-member-onboarding-app"]="new-member-onboarding-app"
-
-          # ================================
-
-          # Set project
-          gcloud config set project ${{ secrets.GCP_PROJECT_ID_DEV }}
-
-          changed_any=false
-
-          for path in "${!app_map[@]}"; do
-            service="${app_map[$path]}"
-
-            # If any changed file is under this path, deploy that service
-            if echo "$CHANGED_PATHS" | grep -q "^$path"; then
-              changed_any=true
-              echo "Detected changes in $path -> deploying Cloud Run service: $service"
-
-              gcloud run deploy "$service" \
-                --source "$path" \
-                --region us-central1 \
-                --platform managed \
-                --allow-unauthenticated \
-                --quiet
-            fi
-          done
-
-          if [ "$changed_any" = false ]; then
-            echo "No app folders in app_map changed. Nothing to deploy."
+          # Only deploy if the new-member-onboarding-app changed
+          if ! echo "$CHANGED_PATHS" | grep -q "^domains/memberships/new-member-onboarding-app"; then
+            echo "No changes in domains/memberships/new-member-onboarding-app. Skipping deploy."
+            exit 0
           fi
+
+          SERVICE="new-member-onboarding-app"
+          IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
+
+          echo "Building image: $IMAGE using root Dockerfile"
+
+          # Build using the root Dockerfile (no --file flag)
+          gcloud builds submit . \
+            --tag "$IMAGE"
+
+          echo "Deploying to Cloud Run service: $SERVICE"
+
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --region "$GCP_REGION" \
+            --platform managed \
+            --allow-unauthenticated
