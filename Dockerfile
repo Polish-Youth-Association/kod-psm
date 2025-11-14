@@ -1,18 +1,37 @@
-FROM node:22-slim
+# Root Dockerfile building the new-member-onboarding-app using pnpm workspaces
+
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
-# Copy monorepo files
-COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
+# Enable pnpm via corepack
+RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
+
+# Copy workspace metadata
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+
+# Copy monorepo source
 COPY domains ./domains
 COPY packages ./packages
+COPY services ./services
 
-RUN corepack enable \
-  && corepack prepare pnpm@10.22.0 --activate \
-  && pnpm install --frozen-lockfile \
-  && pnpm --filter @kod-psm/new-member-onboarding-app build
+# Install deps for the whole monorepo
+RUN pnpm install --frozen-lockfile
 
-# Only copy the built app if you want a slimmer image, or just leave as-is
-WORKDIR /app/domains/memberships/new-member-onboarding-app
+# Build ONLY this app
+RUN pnpm --filter @kod-psm/new-member-onboarding-app run build
+
+# -----------------------------
+# Runtime image
+# -----------------------------
+FROM node:22-slim AS runtime
+
+WORKDIR /app
+
+# Copy everything from builder
+COPY --from=builder /app /app
+
 ENV PORT=8080
-CMD ["node", "dist/index.js"]
+EXPOSE 8080
+
+CMD ["node", "domains/memberships/new-member-onboarding-app/dist/index.js"]
