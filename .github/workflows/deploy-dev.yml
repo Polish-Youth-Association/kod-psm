@@ -28,12 +28,18 @@ jobs:
       - name: Get changed files
         id: changes
         run: |
-          # Handle first push vs later pushes
-          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            # First commit on branch: compare against empty tree
-            git diff --name-only HEAD > changed_files.txt || echo "" > changed_files.txt
+          git fetch --unshallow || true
+
+          echo "HEAD revision:"
+          git rev-parse HEAD
+
+          # If there is a previous commit, diff HEAD^..HEAD; otherwise, treat all files as changed
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            echo "Using diff: HEAD^..HEAD"
+            git diff --name-only HEAD^ HEAD > changed_files.txt
           else
-            git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt || echo "" > changed_files.txt
+            echo "No parent commit (first commit on branch). Using HEAD only."
+            git diff --name-only HEAD > changed_files.txt
           fi
 
           echo "Changed files:"
