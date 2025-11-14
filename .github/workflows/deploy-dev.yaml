@@ -46,7 +46,7 @@ jobs:
           echo "After:  $AFTER"
 
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            # First push on branch: just list files in this commit
+            # First push on branch: just look at this commit
             git diff --name-only "$AFTER" > changed_files.txt || echo "" > changed_files.txt
           else
             git diff --name-only "$BEFORE" "$AFTER" > changed_files.txt || echo "" > changed_files.txt
@@ -57,36 +57,36 @@ jobs:
 
           echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
 
-          - name: Build & Deploy new-member-onboarding-app if changed
-          run: |
-            CHANGED_PATHS=$(cat changed_files.txt || echo "")
-            if [ -z "$CHANGED_PATHS" ]; then
-              echo "No changed files detected. Skipping deploy."
-              exit 0
-            fi
-  
-            echo "Changed paths:"
-            echo "$CHANGED_PATHS"
-  
-            # Only deploy if the new-member-onboarding-app changed
-            if ! echo "$CHANGED_PATHS" | grep -q "^domains/memberships/new-member-onboarding-app"; then
-              echo "No changes in domains/memberships/new-member-onboarding-app. Skipping deploy."
-              exit 0
-            fi
-  
-            SERVICE="new-member-onboarding-app"
-            IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
-  
-            echo "Building image: $IMAGE using root Dockerfile"
-  
-            # Build using the root Dockerfile (no --file)
-            gcloud builds submit . \
-              --tag "$IMAGE"
-  
-            echo "Deploying to Cloud Run service: $SERVICE"
-  
-            gcloud run deploy "$SERVICE" \
-              --image "$IMAGE" \
-              --region "$GCP_REGION" \
-              --platform managed \
-              --allow-unauthenticated
+      - name: Build & Deploy new-member-onboarding-app if changed
+        run: |
+          CHANGED_PATHS=$(cat changed_files.txt || echo "")
+          if [ -z "$CHANGED_PATHS" ]; then
+            echo "No changed files detected. Skipping deploy."
+            exit 0
+          fi
+
+          echo "Changed paths:"
+          echo "$CHANGED_PATHS"
+
+          # Only deploy if the new-member-onboarding-app changed
+          if ! echo "$CHANGED_PATHS" | grep -q "^domains/memberships/new-member-onboarding-app"; then
+            echo "No changes in domains/memberships/new-member-onboarding-app. Skipping deploy."
+            exit 0
+          fi
+
+          SERVICE="new-member-onboarding-app"
+          IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
+
+          echo "Building image: $IMAGE using root Dockerfile"
+
+          # Build using the root Dockerfile (no --file flag)
+          gcloud builds submit . \
+            --tag "$IMAGE"
+
+          echo "Deploying to Cloud Run service: $SERVICE"
+
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --region "$GCP_REGION" \
+            --platform managed \
+            --allow-unauthenticated
