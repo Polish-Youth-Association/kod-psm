@@ -3,14 +3,14 @@ name: Deploy apps to DEV
 on:
   push:
     branches:
-      - dev   # only deploy from dev; prod can use a separate workflow later
+      - dev
 
 jobs:
   deploy-dev:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write   # required for Workload Identity Federation
+      id-token: write
 
     steps:
       - name: Checkout repo
@@ -87,7 +87,8 @@ jobs:
                 --source "$path" \
                 --region us-central1 \
                 --platform managed \
-                --allow-unauthenticated
+                --allow-unauthenticated \
+                --quiet
             fi
           done
 
