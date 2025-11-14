@@ -57,56 +57,36 @@ jobs:
 
           echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
 
-      - name: Build & Deploy changed apps
-        if: steps.changed.outputs.files != ''
-        run: |
-          CHANGED_PATHS=$(cat changed_files.txt || echo "")
-          if [ -z "$CHANGED_PATHS" ]; then
-            echo "No changed files detected. Skipping deploy."
-            exit 0
-          fi
-
-          echo "Changed paths:"
-          echo "$CHANGED_PATHS"
-
-          # Map app directories -> Cloud Run services & Dockerfiles
-          declare -A app_map
-          declare -A dockerfile_map
-
-          # ====== REGISTER APPS HERE ======
-          app_map["domains/memberships/new-member-onboarding-app"]="new-member-onboarding-app"
-          dockerfile_map["domains/memberships/new-member-onboarding-app"]="domains/memberships/new-member-onboarding-app/Dockerfile"
-          # =================================
-
-          changed_any=false
-
-          for path in "${!app_map[@]}"; do
-            service="${app_map[$path]}"
-            dockerfile="${dockerfile_map[$path]}"
-
-            # If any changed file is under this path, build & deploy that service
-            if echo "$CHANGED_PATHS" | grep -q "^$path"; then
-              changed_any=true
-              echo "Detected changes in $path -> building & deploying: $service"
-
-              IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${service}:${GITHUB_SHA}"
-              echo "Building image: $IMAGE using Dockerfile: $dockerfile"
-
-              # Build container with Cloud Build using the monorepo as context
-              gcloud builds submit . \
-                --tag "$IMAGE" \
-                --file "$dockerfile"
-
-              echo "Deploying to Cloud Run service: $service"
-
-              gcloud run deploy "$service" \
-                --image "$IMAGE" \
-                --region "$GCP_REGION" \
-                --platform managed \
-                --allow-unauthenticated
+          - name: Build & Deploy new-member-onboarding-app if changed
+          run: |
+            CHANGED_PATHS=$(cat changed_files.txt || echo "")
+            if [ -z "$CHANGED_PATHS" ]; then
+              echo "No changed files detected. Skipping deploy."
+              exit 0
             fi
-          done
-
-          if [ "$changed_any" = false ]; then
-            echo "No app folders in app_map changed. Nothing to deploy."
-          fi
+  
+            echo "Changed paths:"
+            echo "$CHANGED_PATHS"
+  
+            # Only deploy if the new-member-onboarding-app changed
+            if ! echo "$CHANGED_PATHS" | grep -q "^domains/memberships/new-member-onboarding-app"; then
+              echo "No changes in domains/memberships/new-member-onboarding-app. Skipping deploy."
+              exit 0
+            fi
+  
+            SERVICE="new-member-onboarding-app"
+            IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
+  
+            echo "Building image: $IMAGE using root Dockerfile"
+  
+            # Build using the root Dockerfile (no --file)
+            gcloud builds submit . \
+              --tag "$IMAGE"
+  
+            echo "Deploying to Cloud Run service: $SERVICE"
+  
+            gcloud run deploy "$SERVICE" \
+              --image "$IMAGE" \
+              --region "$GCP_REGION" \
+              --platform managed \
+              --allow-unauthenticated
