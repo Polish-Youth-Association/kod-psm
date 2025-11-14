@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.22.0",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm -r run build",
     "test": "jest",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write ."
