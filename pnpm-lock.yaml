@@ -52,11 +52,17 @@ importers:
         version: 4.21.2
     devDependencies:
       '@types/express':
-        specifier: ^5.0.5
-        version: 5.0.5
+        specifier: ^4.17.21
+        version: 4.17.25
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
       ts-node-dev:
         specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.10.1)(typescript@5.9.3)
+        version: 2.0.0(@types/node@20.19.25)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
 
   packages/email-templates: {}
 
@@ -484,11 +490,11 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
-  '@types/express-serve-static-core@5.1.0':
-    resolution: {integrity: sha512-jnHMsrd0Mwa9Cf4IdOzbz543y4XJepXrbia2T4b6+spXC2We3t1y6K44D3mR8XMFSXMCf3/l7rCgddfx7UNVBA==}
+  '@types/express-serve-static-core@4.19.7':
+    resolution: {integrity: sha512-FvPtiIf1LfhzsaIXhv/PHan/2FeQBbtBDtfX2QfvPxdUelMDEckK08SM6nqo1MIZY3RUlfA+HV8+hFUSio78qg==}
 
-  '@types/express@5.0.5':
-    resolution: {integrity: sha512-LuIQOcb6UmnF7C1PCFmEU1u2hmiHL43fgFQX67sN3H4Z+0Yk0Neo++mFsBjhOAuLzvlQeqAAkeDOZrJs9rzumQ==}
+  '@types/express@4.17.25':
+    resolution: {integrity: sha512-dVd04UKsfpINUnK0yBoYHDF3xu7xVH4BuDotC/xGuycx4CgbP48X/KF/586bcObxT0HENHXEU8Nqtu6NR+eKhw==}
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
@@ -513,6 +519,9 @@ packages:
 
   '@types/mime@1.3.5':
     resolution: {integrity: sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==}
+
+  '@types/node@20.19.25':
+    resolution: {integrity: sha512-ZsJzA5thDQMSQO788d7IocwwQbI8B5OPzmqNvpf3NY/+MHDAS759Wo0gd2WQeXYt5AAAQjzcrTVC6SKCuYgoCQ==}
 
   '@types/node@24.10.1':
     resolution: {integrity: sha512-GNWcUTRBgIRJD5zj+Tq0fKOJ5XZajIiBroOF0yvj2bSU1WvNdYS/dn9UxwsujGW4JX06dnHyjV2y9rRaybH0iQ==}
@@ -2429,6 +2438,9 @@ packages:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
 
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
@@ -3099,25 +3111,26 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 24.10.1
+      '@types/node': 20.19.25
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 24.10.1
+      '@types/node': 20.19.25
 
   '@types/estree@1.0.8': {}
 
-  '@types/express-serve-static-core@5.1.0':
+  '@types/express-serve-static-core@4.19.7':
     dependencies:
-      '@types/node': 24.10.1
+      '@types/node': 20.19.25
       '@types/qs': 6.14.0
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
 
-  '@types/express@5.0.5':
+  '@types/express@4.17.25':
     dependencies:
       '@types/body-parser': 1.19.6
-      '@types/express-serve-static-core': 5.1.0
+      '@types/express-serve-static-core': 4.19.7
+      '@types/qs': 6.14.0
       '@types/serve-static': 1.15.10
 
   '@types/http-errors@2.0.5': {}
@@ -3143,6 +3156,10 @@ snapshots:
 
   '@types/mime@1.3.5': {}
 
+  '@types/node@20.19.25':
+    dependencies:
+      undici-types: 6.21.0
+
   '@types/node@24.10.1':
     dependencies:
       undici-types: 7.16.0
@@ -3154,16 +3171,16 @@ snapshots:
   '@types/send@0.17.6':
     dependencies:
       '@types/mime': 1.3.5
-      '@types/node': 24.10.1
+      '@types/node': 20.19.25
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 24.10.1
+      '@types/node': 20.19.25
 
   '@types/serve-static@1.15.10':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 24.10.1
+      '@types/node': 20.19.25
       '@types/send': 0.17.6
 
   '@types/stack-utils@2.0.3': {}
@@ -5298,7 +5315,7 @@ snapshots:
       babel-jest: 30.2.0(@babel/core@7.28.5)
       jest-util: 30.2.0
 
-  ts-node-dev@2.0.0(@types/node@24.10.1)(typescript@5.9.3):
+  ts-node-dev@2.0.0(@types/node@20.19.25)(typescript@5.9.3):
     dependencies:
       chokidar: 3.6.0
       dynamic-dedupe: 0.3.0
@@ -5308,13 +5325,31 @@ snapshots:
       rimraf: 2.7.1
       source-map-support: 0.5.13
       tree-kill: 1.2.2
-      ts-node: 10.9.2(@types/node@24.10.1)(typescript@5.9.3)
+      ts-node: 10.9.2(@types/node@20.19.25)(typescript@5.9.3)
       tsconfig: 7.0.0
       typescript: 5.9.3
     transitivePeerDependencies:
       - '@swc/core'
       - '@swc/wasm'
       - '@types/node'
+
+  ts-node@10.9.2(@types/node@20.19.25)(typescript@5.9.3):
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      '@tsconfig/node10': 1.0.12
+      '@tsconfig/node12': 1.0.11
+      '@tsconfig/node14': 1.0.3
+      '@tsconfig/node16': 1.0.4
+      '@types/node': 20.19.25
+      acorn: 8.15.0
+      acorn-walk: 8.3.4
+      arg: 4.1.3
+      create-require: 1.1.1
+      diff: 4.0.2
+      make-error: 1.3.6
+      typescript: 5.9.3
+      v8-compile-cache-lib: 3.0.1
+      yn: 3.1.1
 
   ts-node@10.9.2(@types/node@24.10.1)(typescript@5.9.3):
     dependencies:
@@ -5410,6 +5445,8 @@ snapshots:
       has-bigints: 1.1.0
       has-symbols: 1.1.0
       which-boxed-primitive: 1.1.1
+
+  undici-types@6.21.0: {}
 
   undici-types@7.16.0: {}
 
