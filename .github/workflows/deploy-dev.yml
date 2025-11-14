@@ -25,26 +25,40 @@ jobs:
       - name: Setup gcloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Get changed files
-        id: changes
+      - name: Fetch Git history and determine changed files
         run: |
           git fetch --unshallow || true
-      
+          
           echo "Before: $GITHUB_EVENT_BEFORE"
           echo "After: $GITHUB_EVENT_AFTER"
-      
-          if [ "$GITHUB_EVENT_BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            # First push on branch
+          
+          if [ -z "$GITHUB_EVENT_BEFORE" ] || [ "$GITHUB_EVENT_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # First push on branch or empty GITHUB_EVENT_BEFORE
             git diff --name-only "$GITHUB_EVENT_AFTER" > changed_files.txt
+          elif [ -z "$GITHUB_EVENT_AFTER" ]; then
+            # Empty GITHUB_EVENT_AFTER
+            echo "Error: GITHUB_EVENT_AFTER is empty" >&2
+            exit 1
           else
             git diff --name-only "$GITHUB_EVENT_BEFORE" "$GITHUB_EVENT_AFTER" > changed_files.txt
           fi
-      
+          
           echo "Changed files:"
           cat changed_files.txt
-      
+          
           echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
-      
+        shell: /usr/bin/bash -e {0}
+        env:
+          CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/kod-psm/kod-psm/gha-creds-a9c6e370e3283ffe.json
+          GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/kod-psm/kod-psm/gha-creds-a9c6e370e3283ffe.json
+          GOOGLE_GHA_CREDS_PATH: /home/runner/work/kod-psm/kod-psm/gha-creds-a9c6e370e3283ffe.json
+          CLOUDSDK_CORE_PROJECT: ***
+          CLOUDSDK_PROJECT: ***
+          GCLOUD_PROJECT: ***
+          GCP_PROJECT: ***
+          GOOGLE_CLOUD_PROJECT: ***
+          CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
+          CLOUDSDK_METRICS_ENVIRONMENT_VERSION: 2.2.1
 
       - name: Deploy changed apps
         run: |
