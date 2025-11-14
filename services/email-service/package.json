@@ -8,7 +8,7 @@
       "start": "node dist/preview-new-member-email.js"
     },
     "dependencies": {
-      "@kod-psm/email-templates": "0.1.0"
+      "@kod-psm/email-templates": "workspace:*"
     }
   }
   
