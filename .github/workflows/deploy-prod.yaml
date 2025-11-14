@@ -46,7 +46,7 @@ jobs:
           echo "After:  $AFTER"
 
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            # First push on branch: just list files in this commit
+            # First push on branch: diff against initial commit
             git diff --name-only "$AFTER" > changed_files.txt || echo "" > changed_files.txt
           else
             git diff --name-only "$BEFORE" "$AFTER" > changed_files.txt || echo "" > changed_files.txt
@@ -69,13 +69,17 @@ jobs:
           echo "Changed paths:"
           echo "$CHANGED_PATHS"
 
-          # Map app directories -> Cloud Run services & Dockerfiles
+          # Map app directories -> Cloud Run services
           declare -A app_map
           declare -A dockerfile_map
 
           # ====== REGISTER APPS HERE ======
+          # key = repo path, value = service name
           app_map["domains/memberships/new-member-onboarding-app"]="new-member-onboarding-app"
           dockerfile_map["domains/memberships/new-member-onboarding-app"]="domains/memberships/new-member-onboarding-app/Dockerfile"
+          # Later:
+          # app_map["domains/finance/reimbursements-app"]="reimbursements-app"
+          # dockerfile_map["domains/finance/reimbursements-app"]="domains/finance/reimbursements-app/Dockerfile"
           # =================================
 
           changed_any=false

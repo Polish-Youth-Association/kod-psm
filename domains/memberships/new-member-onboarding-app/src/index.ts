@@ -20,25 +20,21 @@ if (!SMTP_HOST || !SMTP_PORT || !SMTP_USERNAME || !SMTP_PASSWORD || !EMAIL_SENDE
   process.exit(1);
 }
 
-// ------------------------------
-// EXPRESS + FILE UPLOAD SETUP
-// ------------------------------
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// ------------------------------
-// EMAIL TRANSPORT
-// ------------------------------
 const transporter = nodemailer.createTransport({
-  jsonTransport: true,
+  host: SMTP_HOST,
+  port: Number(SMTP_PORT),
+  secure: Number(SMTP_PORT) === 465,
+  auth: {
+    user: SMTP_USERNAME,
+    pass: SMTP_PASSWORD,
+  },
 });
-
-// ------------------------------
-// ROUTES
-// ------------------------------
 
 /**
  * Health check for Cloud Run
