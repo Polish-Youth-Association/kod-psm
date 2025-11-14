@@ -1,0 +1,14 @@
+{
+    "name": "@kod-psm/email-service",
+    "version": "0.1.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+      "build": "tsc -p tsconfig.json",
+      "start": "node dist/preview-new-member-email.js"
+    },
+    "dependencies": {
+      "@kod-psm/email-templates": "0.1.0"
+    }
+  }
+  
