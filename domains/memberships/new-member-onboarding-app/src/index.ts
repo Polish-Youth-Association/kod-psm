@@ -16,3 +16,4 @@ app.get('/healthz', (_req: Request, res: Response) => {
 app.listen(port, () => {
   console.log(`new-member-onboarding-app listening on port ${port}`);
 });
+
