@@ -105,6 +105,14 @@ jobs:
               --platform=managed \
               --allow-unauthenticated \
               --project="$GCP_PROJECT_ID"
+
+            echo "Setting service to unauthenticated..."
+            gcloud run services add-iam-policy-binding "$SERVICE" \
+            --region "$GCP_REGION" \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --project="$GCP_PROJECT_ID"
+
             echo "::endgroup::"
           done
 
