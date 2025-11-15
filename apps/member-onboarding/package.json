@@ -1,5 +1,5 @@
 {
-  "name": "@kod-psm/example2",
+  "name": "@kod-psm/member-onboarding",
   "version": "0.1.0",
   "private": true,
   "main": "dist/index.js",

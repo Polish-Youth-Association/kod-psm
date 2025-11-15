@@ -189,12 +189,23 @@ async function main() {
   );
 
   const tsconfig = {
-    extends: '../../tsconfig.base.json',
     compilerOptions: {
-      outDir: 'dist',
-      rootDir: 'src',
-    },
-    include: ['src'],
+        target: "ES2020",
+        module: "CommonJS",
+        moduleResolution: "Node",
+        strict: true,
+    
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+    
+        forceConsistentCasingInFileNames: true,
+        skipLibCheck: true,
+    
+        outDir: "dist",
+        rootDir: "src"
+      },
+      include: ["src"],
+      exclude: ["node_modules", "dist"],
   };
 
   fs.writeFileSync(
@@ -231,14 +242,13 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY apps ./apps
-COPY packages ./packages
-COPY services ./services
+COPY package.json ./
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
-RUN pnpm --filter @kod-psm/${appSlug} run build
+COPY . .
+
+RUN pnpm run build
 
 FROM node:22-slim AS runtime
 WORKDIR /app
@@ -248,7 +258,7 @@ COPY --from=builder /app /app
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["node", "apps/${appSlug}/dist/index.js"]
+CMD ["node", "dist/index.js"]
 `.trimStart();
 
   fs.writeFileSync(path.join(absAppPath, 'Dockerfile'), dockerfile, 'utf8');
