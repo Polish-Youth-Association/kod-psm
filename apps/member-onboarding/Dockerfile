@@ -19,4 +19,4 @@ COPY --from=builder /app /app
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/server.js"]
