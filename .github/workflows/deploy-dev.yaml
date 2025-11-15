@@ -24,14 +24,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Authenticate to GCP (DEV)
-      # Uses Workload Identity Federation with your DEV service account
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_DEV }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_DEV }}
           project_id: ${{ env.GCP_PROJECT_ID }}
-          token_format: 'access_token'
-          access_token_lifetime: '3600s'
+          token_format: access_token
+          access_token_lifetime: 3600s
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -50,9 +49,10 @@ jobs:
           SERVICE="new-member-onboarding-app"
           IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
 
-          echo "Building image: $IMAGE from domains/memberships/new-member-onboarding-app/Dockerfile"
+          echo "Building image: $IMAGE from root Dockerfile with repo root as context"
 
-          gcloud builds submit domains/memberships/new-member-onboarding-app \
+          # Build from repo root so pnpm-workspace.yaml & packages are available
+          gcloud builds submit . \
             --tag "$IMAGE" \
             --project="$GCP_PROJECT_ID"
 
