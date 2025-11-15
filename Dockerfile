@@ -7,8 +7,8 @@ WORKDIR /app
 # Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
-# Copy workspace metadata
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+# Copy workspace metadata + TS config
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json tsconfig.json ./
 
 # Copy monorepo source
 COPY domains ./domains
