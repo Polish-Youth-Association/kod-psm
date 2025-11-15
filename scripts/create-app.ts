@@ -258,7 +258,7 @@ COPY --from=builder /app /app
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["node", "apps/dist/index.js"]
+CMD ["node", "dist/index.js"]
 `.trimStart();
 
   fs.writeFileSync(path.join(absAppPath, 'Dockerfile'), dockerfile, 'utf8');
