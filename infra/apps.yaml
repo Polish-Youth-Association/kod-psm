@@ -13,3 +13,15 @@ apps:
     artifact_repo: "example2"
     secret_prefix: "example2"
     secrets: []
+  - id: member-onboarding
+    name: "member-onboarding"
+    path: "apps/member-onboarding"
+    region: "us-central1"
+    artifact_repo: "member-onboarding"
+    secret_prefix: "member-onboarding"
+    secrets:
+      - SMTP_HOST
+      - SMTP_PORT
+      - SMTP_USERNAME
+      - SMTP_PASSWORD
+      - EMAIL_SENDER
