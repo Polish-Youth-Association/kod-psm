@@ -11,7 +11,7 @@ app.post('/api/log', (req, res) => {
 });
 
 app.get('/', (_req, res) => {
-  res.json({ ok: true, service: 'member-onboarding-app' });
+  res.json({ ok: true, service: 'member-onboarding' });
 });
 
 app.listen(PORT, () => {
