@@ -189,12 +189,23 @@ async function main() {
   );
 
   const tsconfig = {
-    extends: '../../tsconfig.base.json',
     compilerOptions: {
-      outDir: 'dist',
-      rootDir: 'src',
-    },
-    include: ['src'],
+        target: "ES2020",
+        module: "CommonJS",
+        moduleResolution: "Node",
+        strict: true,
+    
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+    
+        forceConsistentCasingInFileNames: true,
+        skipLibCheck: true,
+    
+        outDir: "dist",
+        rootDir: "src"
+      },
+      include: ["src"],
+      exclude: ["node_modules", "dist"],
   };
 
   fs.writeFileSync(
@@ -231,9 +242,9 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 COPY . .
 
