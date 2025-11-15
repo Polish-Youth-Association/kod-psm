@@ -28,6 +28,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_DEV }}
           service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT_DEV }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
           token_format: 'access_token'
           access_token_lifetime: '3600s'
 

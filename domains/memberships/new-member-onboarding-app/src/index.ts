@@ -45,7 +45,7 @@ app.get('/', (_req: Request, res: Response) => {
 
 /*
  * POST /onboard
- *
+ * //////////
  * Accepts:
  * - firstNamePolish
  * - firstNameEnglish
