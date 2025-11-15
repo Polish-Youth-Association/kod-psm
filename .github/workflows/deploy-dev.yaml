@@ -30,19 +30,19 @@ jobs:
           service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT_DEV }}
           token_format: 'access_token'
           access_token_lifetime: '3600s'
-          project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}          project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
+          project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2 google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ env.GCP_PROJECT_ID }}          project_id: ${{ env.GCP_PROJECT_ID }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Verify GCP AuthenticationVerify GCP Authentication
         run: |
           echo "Verifying GCP authentication..."GCP authentication..."
           gcloud auth list
           gcloud config get-value project
-          gcloud config set project ${{ env.GCP_PROJECT_ID }}          gcloud config set project ${{ env.GCP_PROJECT_ID }}
+          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}          gcloud config set project ${{ env.GCP_PROJECT_ID }}
 
       - name: Determine changed filesmine changed files
         id: changedanged
@@ -85,14 +85,14 @@ jobs:
           fi          fi
 
           SERVICE="new-member-onboarding-app"
-          IMAGE="us-central1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"          IMAGE="us-central1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
+          IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"          IMAGE="us-central1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
 
           echo "Building image: $IMAGE using root Dockerfile"          echo "Building image: $IMAGE using root Dockerfile"
 
           # Build using Cloud Buildd
           gcloud builds submit . \it . \
             --tag "$IMAGE" \
-            --project=${{ env.GCP_PROJECT_ID }}            --project=${{ env.GCP_PROJECT_ID }}
+            --project=${{ secrets.GCP_PROJECT_ID }}            --project=${{ env.GCP_PROJECT_ID }}
 
           echo "Deploying to Cloud Run service: $SERVICE"          echo "Deploying to Cloud Run service: $SERVICE"
 
@@ -102,4 +102,4 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
 
-            --project=${{ env.GCP_PROJECT_ID }}            --project=${{ env.GCP_PROJECT_ID }}
+            --project=${{ secrets.GCP_PROJECT_ID }}            --project=${{ env.GCP_PROJECT_ID }}

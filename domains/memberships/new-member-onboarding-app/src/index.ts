@@ -43,7 +43,7 @@ app.get('/', (_req: Request, res: Response) => {
   res.json({ ok: true, service: 'new-member-onboarding-app' });
 });
 
-/*
+/* test
  * POST /onboard
  *
  * Accepts:
