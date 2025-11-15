@@ -28,11 +28,20 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_DEV }}
           service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT_DEV }}
+          token_format: 'access_token'
+          access_token_lifetime: '3600s'
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Verify GCP Authentication
+        run: |
+          echo "Verifying GCP authentication..."
+          gcloud auth list
+          gcloud config get-value project
+          gcloud config set project ${{ env.GCP_PROJECT_ID }}
 
       - name: Determine changed files
         id: changed
@@ -75,13 +84,14 @@ jobs:
           fi
 
           SERVICE="new-member-onboarding-app"
-          IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
+          IMAGE="us-central1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
 
           echo "Building image: $IMAGE using root Dockerfile"
 
-          # Build using the root Dockerfile (no --file flag)
+          # Build using Cloud Build
           gcloud builds submit . \
-            --tag "$IMAGE"
+            --tag "$IMAGE" \
+            --project=${{ env.GCP_PROJECT_ID }}
 
           echo "Deploying to Cloud Run service: $SERVICE"
 
@@ -89,4 +99,5 @@ jobs:
             --image "$IMAGE" \
             --region "$GCP_REGION" \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --project=${{ env.GCP_PROJECT_ID }}
