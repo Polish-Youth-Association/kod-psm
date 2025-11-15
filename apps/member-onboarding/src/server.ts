@@ -16,7 +16,7 @@ app.post("/api/log", (req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "member-onboarding-app" });
+  res.json({ ok: true, service: "member-onboarding" });
 });
 
 app.get("*", (_req, res) => {
