@@ -6,13 +6,6 @@ apps:
     artifact_repo: "example"
     secret_prefix: "example"
     secrets: []
-  - id: example2
-    name: "example2"
-    path: "apps/example2"
-    region: "us-central1"
-    artifact_repo: "example2"
-    secret_prefix: "example2"
-    secrets: []
   - id: member-onboarding
     name: "member-onboarding"
     path: "apps/member-onboarding"
