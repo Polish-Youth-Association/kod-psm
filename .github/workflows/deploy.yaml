@@ -112,7 +112,8 @@ jobs:
               --member="domain:polishyouth.org" \
               --role="roles/run.invoker" \
               --project="$GCP_PROJECT_ID" \
-              --quiet
+              --quiet \
+              --verbose
             
             echo "::endgroup::"
           done
