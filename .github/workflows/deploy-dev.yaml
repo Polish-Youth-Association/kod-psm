@@ -30,76 +30,73 @@ jobs:
           service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT_DEV }}
           token_format: 'access_token'
           access_token_lifetime: '3600s'
-          project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
 
       - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2 google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
 
-      - name: Verify GCP AuthenticationVerify GCP Authentication
+      - name: Verify GCP Authentication
         run: |
-          echo "Verifying GCP authentication..."GCP authentication..."
+          echo "Verifying GCP authentication..."
           gcloud auth list
           gcloud config get-value project
-          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}          gcloud config set project ${{ env.GCP_PROJECT_ID }}
+          gcloud config set project "$GCP_PROJECT_ID"
 
-      - name: Determine changed filesmine changed files
-        id: changedanged
+      - name: Determine changed files
+        id: changed
         run: |
-          git fetch --unshallow || true          git fetch --unshallow || true
+          git fetch --unshallow || true
 
-          BEFORE="${{ github.event.before }}"before }}"
-          AFTER="${{ github.sha }}"          AFTER="${{ github.sha }}"
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
 
-          echo "Before: $BEFORE""
-          echo "After:  $AFTER"          echo "After:  $AFTER"
+          echo "Before: $BEFORE"
+          echo "After:  $AFTER"
 
-          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then0000000000000000000000000000" ]; then
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             # First push on branch: just look at this commit
-            git diff --name-only "$AFTER" > changed_files.txt || echo "" > changed_files.txtt diff --name-only "$AFTER" > changed_files.txt || echo "" > changed_files.txt
+            git diff --name-only "$AFTER" > changed_files.txt || echo "" > changed_files.txt
           else
-            git diff --name-only "$BEFORE" "$AFTER" > changed_files.txt || echo "" > changed_files.txtgit diff --name-only "$BEFORE" "$AFTER" > changed_files.txt || echo "" > changed_files.txt
-          fi          fi
+            git diff --name-only "$BEFORE" "$AFTER" > changed_files.txt || echo "" > changed_files.txt
+          fi
 
           echo "Changed files:"
-          cat changed_files.txt || true          cat changed_files.txt || true
+          cat changed_files.txt || true
 
-          echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"          echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+          echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
 
-      - name: Build & Deploy new-member-onboarding-app if changedBuild & Deploy new-member-onboarding-app if changed
+      - name: Build & Deploy new-member-onboarding-app if changed
         run: |
-          CHANGED_PATHS=$(cat changed_files.txt || echo "")s.txt || echo "")
+          CHANGED_PATHS=$(cat changed_files.txt || echo "")
           if [ -z "$CHANGED_PATHS" ]; then
-            echo "No changed files detected. Skipping deploy."No changed files detected. Skipping deploy."
-            exit 0exit 0
-          fi          fi
+            echo "No changed files detected. Skipping deploy."
+            exit 0
+          fi
 
           echo "Changed paths:"
-          echo "$CHANGED_PATHS"          echo "$CHANGED_PATHS"
+          echo "$CHANGED_PATHS"
 
           # Only deploy if the new-member-onboarding-app changed
-          if ! echo "$CHANGED_PATHS" | grep -q "^domains/memberships/new-member-onboarding-app"; then then
-            echo "No changes in domains/memberships/new-member-onboarding-app. Skipping deploy."No changes in domains/memberships/new-member-onboarding-app. Skipping deploy."
-            exit 0exit 0
-          fi          fi
+          if ! echo "$CHANGED_PATHS" | grep -q "^domains/memberships/new-member-onboarding-app"; then
+            echo "No changes in domains/memberships/new-member-onboarding-app. Skipping deploy."
+            exit 0
+          fi
 
           SERVICE="new-member-onboarding-app"
-          IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"          IMAGE="us-central1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
+          IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${SERVICE}:${GITHUB_SHA}"
 
-          echo "Building image: $IMAGE using root Dockerfile"          echo "Building image: $IMAGE using root Dockerfile"
+          echo "Building image: $IMAGE using root Dockerfile"
 
-          # Build using Cloud Buildd
-          gcloud builds submit . \it . \
+          gcloud builds submit . \
             --tag "$IMAGE" \
-            --project=${{ secrets.GCP_PROJECT_ID }}            --project=${{ env.GCP_PROJECT_ID }}
+            --project="$GCP_PROJECT_ID"
 
-          echo "Deploying to Cloud Run service: $SERVICE"          echo "Deploying to Cloud Run service: $SERVICE"
+          echo "Deploying to Cloud Run service: $SERVICE"
 
-          gcloud run deploy "$SERVICE" \SERVICE" \
+          gcloud run deploy "$SERVICE" \
             --image "$IMAGE" \
-            --region "$GCP_REGION" \N" \
+            --region "$GCP_REGION" \
             --platform managed \
             --allow-unauthenticated \
-
-            --project=${{ secrets.GCP_PROJECT_ID }}            --project=${{ env.GCP_PROJECT_ID }}
+            --project="$GCP_PROJECT_ID"
