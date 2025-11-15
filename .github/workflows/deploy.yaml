@@ -107,7 +107,7 @@ jobs:
 
             echo "=== Wiring IAP + domain access for $SERVICE ==="
 
-            gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+            gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
               --member="domain:polishyouth.org" \
               --role="roles/iap.httpsResourceAccessor" \
               --quiet
@@ -116,7 +116,7 @@ jobs:
               --region "$REGION" \
               --member="domain:polishyouth.org" \
               --role="roles/run.invoker" \
-              --project="$PROJECT_ID" \
+              --project="$GCP_PROJECT_ID" \
               --quiet
             
             echo "::endgroup::"
