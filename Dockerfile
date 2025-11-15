@@ -18,8 +18,9 @@ COPY services ./services
 # Install deps for the whole monorepo
 RUN pnpm install --frozen-lockfile
 
-# Build ONLY this app
-RUN pnpm --filter @kod-psm/new-member-onboarding-app run build
+# Option A: build only what we need
+RUN pnpm --filter @kod-psm/email-templates run build \
+ && pnpm --filter @kod-psm/new-member-onboarding-app run build
 
 # -----------------------------
 # Runtime image
