@@ -1,5 +1,4 @@
 packages:
-  - "domains/*"
-  - "domains/*/*"
-  - "services/*"
+  - "apps/*"
   - "packages/*"
+  - "services/*"

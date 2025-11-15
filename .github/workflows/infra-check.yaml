@@ -1,0 +1,140 @@
+name: Infra Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  GCP_REGION: us-central1
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_DEV }}
+  IMAGE_REPO: apps
+
+jobs:
+  infra-check:
+    name: Validate / Create Infra for Changed Apps
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_DEV }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_DEV }}
+          token_format: "access_token"
+          access_token_lifetime: "3600s"
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Debug GCP auth
+        run: |
+          echo "Active gcloud account:"
+          gcloud auth list
+          echo "Current project:"
+          gcloud config get-value project
+
+      - name: Determine changed apps in PR
+        id: changed
+        run: |
+          set -euo pipefail
+
+          # Get base and head SHAs for this PR
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          echo "Base SHA:  $BASE_SHA"
+          echo "Head SHA:  $HEAD_SHA"
+
+          # Make sure both SHAs are available locally
+          git fetch origin "$BASE_SHA" "$HEAD_SHA" || true
+
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > changed_files.txt || echo "" > changed_files.txt
+
+          echo "Changed files:"
+          cat changed_files.txt || true
+
+          # Detect which app dirs under apps/ changed
+          APPS=$(grep '^apps/' changed_files.txt | cut -d/ -f2 | sort -u | tr '\n' ' ' || true)
+
+          echo "Detected changed apps: $APPS"
+
+          if [ -z "$APPS" ]; then
+            echo "apps=" >> "$GITHUB_OUTPUT"
+          else
+            echo "apps=$APPS" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ensure required infra for changed apps
+        if: steps.changed.outputs.apps != ''
+        run: |
+          set -euo pipefail
+
+          APPS="${{ steps.changed.outputs.apps }}"
+          PROJECT="$GCP_PROJECT_ID"
+          REGION="$GCP_REGION"
+          REPO="$IMAGE_REPO"
+
+          echo "Apps needing infra check: $APPS"
+
+          echo "Enabling required APIs (idempotent)..."
+          gcloud services enable \
+            run.googleapis.com \
+            cloudbuild.googleapis.com \
+            artifactregistry.googleapis.com \
+            secretmanager.googleapis.com \
+            --project="$PROJECT"
+
+          echo "Checking Artifact Registry repo: $REPO in $REGION"
+          if ! gcloud artifacts repositories describe "$REPO" \
+               --location="$REGION" \
+               --project="$PROJECT" > /dev/null 2>&1; then
+            echo "Repo $REPO not found, creating..."
+            gcloud artifacts repositories create "$REPO" \
+              --repository-format=docker \
+              --location="$REGION" \
+              --description="Shared app container repository" \
+              --project="$PROJECT"
+          else
+            echo "Repo $REPO already exists."
+          fi
+
+          # Per-app checks
+          for APP in $APPS; do
+            echo "-----"
+            echo "Checking infra for app: $APP"
+
+            SECRET_NAME="app-${APP}-config"
+
+            echo "Checking Secret Manager secret: $SECRET_NAME"
+            if ! gcloud secrets describe "$SECRET_NAME" --project="$PROJECT" > /dev/null 2>&1; then
+              echo "Secret $SECRET_NAME not found, creating with empty JSON payload..."
+              echo -n '{}' | gcloud secrets create "$SECRET_NAME" \
+                --project="$PROJECT" \
+                --data-file=- \
+                --replication-policy="automatic"
+            else
+              echo "Secret $SECRET_NAME already exists."
+            fi
+
+            # You can add more app-level infra checks here later, e.g.:
+            # - Pub/Sub topics
+            # - Cloud SQL instance name validation
+            # - per-app Artifact Registry repos if you move away from shared "apps"
+          done
+
+          echo "Infra check completed successfully."
+
+      - name: No app changes
+        if: steps.changed.outputs.apps == ''
+        run: |
+          echo "No app directories under apps/ changed. Skipping infra checks."

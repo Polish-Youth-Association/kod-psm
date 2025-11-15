@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.22.0",
   "scripts": {
+    "create:app": "ts-node scripts/create-app.ts",
     "build": "pnpm -r run build",
     "test": "jest",
     "lint": "eslint . --ext .ts,.tsx",
