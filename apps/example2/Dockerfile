@@ -3,14 +3,13 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY apps ./apps
-COPY packages ./packages
-COPY services ./services
+COPY package.json pnpm-lock.yaml ./
 
 RUN pnpm install --frozen-lockfile
 
-RUN pnpm --filter @kod-psm/example2 run build
+COPY . .
+
+RUN pnpm run build
 
 FROM node:22-slim AS runtime
 WORKDIR /app
