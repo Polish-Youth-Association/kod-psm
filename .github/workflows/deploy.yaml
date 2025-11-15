@@ -103,16 +103,22 @@ jobs:
               --image="$IMAGE" \
               --region="$GCP_REGION" \
               --platform=managed \
-              --allow-unauthenticated \
               --project="$GCP_PROJECT_ID"
 
-            echo "Setting service to unauthenticated..."
-            gcloud run services add-iam-policy-binding "$SERVICE" \
-            --region "$GCP_REGION" \
-            --member="allUsers" \
-            --role="roles/run.invoker" \
-            --project="$GCP_PROJECT_ID"
+            echo "=== Wiring IAP + domain access for $SERVICE ==="
 
+            gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+              --member="domain:polishyouth.org" \
+              --role="roles/iap.httpsResourceAccessor" \
+              --quiet
+
+            gcloud run services add-iam-policy-binding "$SERVICE" \
+              --region "$REGION" \
+              --member="domain:polishyouth.org" \
+              --role="roles/run.invoker" \
+              --project="$PROJECT_ID" \
+              --quiet
+            
             echo "::endgroup::"
           done
 
