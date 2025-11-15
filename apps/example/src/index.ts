@@ -15,5 +15,3 @@ app.get('/', (_req, res) => {
 app.listen(PORT, () => {
   console.log('🚀 example (example) running on port ' + PORT);
 });
-
-//# The code above is from apps/example/src/index.ts
