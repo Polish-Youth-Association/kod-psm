@@ -102,7 +102,6 @@ const upload = multer({
   },
 });
 
-// Health check
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ ok: true, service: 'member-onboarding-app' });
 });
