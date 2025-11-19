@@ -69,12 +69,10 @@ function renderNewMemberEmail(params: {
   }
 
   return base
-    // NEW mustache-style placeholders
     .replace(/{{\s*firstNamePolish\s*}}/gi, params.firstNamePolish)
     .replace(/{{\s*firstNameEnglish\s*}}/gi, params.firstNameEnglish)
     .replace(/{{\s*memberId\s*}}/gi, params.memberId)
 
-    // OLD placeholders (keep for backwards compatibility)
     .replace(/\[First Name Polish\]/g, params.firstNamePolish)
     .replace(/\[First Name English\]/g, params.firstNameEnglish)
     .replace(/\[MEMBERSHIP_ID\]/g, params.memberId);

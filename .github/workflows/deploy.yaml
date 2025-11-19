@@ -105,6 +105,7 @@ jobs:
               --region="$GCP_REGION" \
               --platform=managed \
               --project="$GCP_PROJECT_ID"
+              --set-secrets=APP_CONFIG_JSON=app-member-onboarding-config:latest
 
             echo "=== Wiring IAP + domain access for $SERVICE ==="
 
