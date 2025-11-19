@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Witamy w PSM | Welcome to the Polish Youth Association</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      /* Basic reset */
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f5f7fa;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        color: #111827;
+      }
+
+      table {
+        border-spacing: 0;
+        border-collapse: collapse;
+      }
+
+      img {
+        border: 0;
+        max-width: 100%;
+        height: auto;
+      }
+
+      a {
+        color: #1d4ed8;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .wrapper {
+        width: 100%;
+        table-layout: fixed;
+        background-color: #f5f7fa;
+        padding: 24px 0;
+      }
+
+      .main {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      }
+
+      .header {
+        padding: 32px 24px 24px 24px;
+        text-align: center;
+      }
+
+      .header-logo {
+        margin-bottom: 16px;
+      }
+
+      .header-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0;
+        color: #111827;
+      }
+
+      .header-subtitle {
+        font-size: 13px;
+        margin: 6px 0 0 0;
+        color: #4b5563;
+      }
+
+      .content {
+        padding: 24px;
+      }
+
+      .hero-block {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .hero-title-pl {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0 0 6px 0;
+      }
+
+      .hero-title-en {
+        font-size: 18px;
+        font-weight: 700;
+        font-style: italic;
+        margin: 0 0 16px 0;
+      }
+
+      .paragraph {
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 12px 0;
+      }
+
+      .paragraph-center {
+        text-align: center;
+      }
+
+      .membership-box {
+        margin: 12px 0 24px 0;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background-color: #fef3c7;
+        border: 1px solid #facc15;
+        text-align: center;
+      }
+
+      .membership-label {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #92400e;
+        margin-bottom: 8px;
+      }
+
+      .membership-id {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        color: #92400e;
+      }
+
+      .two-column {
+        width: 100%;
+      }
+
+      .two-column-image-cell {
+        vertical-align: middle;
+        text-align: center;
+        padding: 0 16px 0 0;
+        }
+
+      .two-column-text-cell {
+        width: 60%;
+        padding: 0;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+      }
+
+      .divider {
+        border-top: 1px solid #e5e7eb;
+        margin: 24px 0;
+      }
+
+      .cta-button {
+        display: inline-block;
+        padding: 10px 18px;
+        border-radius: 999px;
+        background-color: #ffcc00;
+        color: #111827 !important;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .footer {
+        padding: 16px 24px 24px 24px;
+        font-size: 12px;
+        color: #6b7280;
+        text-align: center;
+      }
+
+      .footer-links {
+        margin-top: 8px;
+      }
+
+      .footer-links a {
+        color: #1d4ed8;
+        margin: 0 6px;
+        font-size: 12px;
+      }
+
+      .small {
+        font-size: 11px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <center class="wrapper">
+      <table class="main" role="presentation">
+        <!-- HEADER -->
+        <tr>
+          <td class="header">
+            <!-- Replace this URL with your logo in Cloud Storage -->
+            <img
+              class="header-logo"
+              src="https://storage.googleapis.com/member-onboarding/image5.1.png"
+              alt="Polish Youth Association"
+              height="30"
+            />
+          </td>
+        </tr>
+
+        <!-- CONTENT -->
+        <tr>
+          <td class="content">
+            <!-- Hero greeting block -->
+            <div class="hero-block">
+              <p class="hero-title-pl">
+                Witaj {{firstNamePolish}}!
+              </p>
+              <p class="hero-title-en">
+                Hi {{firstNameEnglish}}!
+              </p>
+              <p class="paragraph">
+                Oto Twój numer identyfikacyjny członkostwa:
+                <br />
+                <span style="font-style: italic;">Here’s your membership ID number:</span>
+              </p>
+
+              <div class="membership-box">
+                <div class="membership-label">
+                  Twój numer członkowski · Membership ID
+                </div>
+                <div class="membership-id">
+                  {{memberId}}
+                </div>
+              </div>
+            </div>
+
+            <!-- Certificate text -->
+            <p class="paragraph">
+              W załączniku poniżej znajdziesz certyfikat zaświadczający Twoje
+              członkostwo w naszej organizacji. Możesz go wykorzystać jako dowód
+              zaangażowania w działalność organizacji społecznej.
+            </p>
+            <p class="paragraph">
+              Attached below you will find a certificate confirming your membership in
+              our organization. You can use it as proof of your engagement in the
+              activities of a community organization.
+            </p>
+
+            <div class="divider"></div>
+
+            <!-- Get to know us -->
+            <h2 class="section-title">Poznaj Nas! — Get to Know Us!</h2>
+            <p class="paragraph">
+              Zajmujemy się wspieraniem i jednoczeniem młodzieży polonijnej na całym
+              świecie poprzez organizowane przez nas wydarzenia, dostarczane informacje
+              na tematy dla młodzieży ważne, oraz wzmacnianie głosu młodych ludzi
+              poprzez współpracę z organizacjami działającymi na ich rzecz oraz
+              wspieranie uczestnictwa młodzieży w życiu społecznym.
+            </p>
+            <p class="paragraph">
+              We support and unite Polish youth around the world through events
+              organized by us, provide information on important topics for young
+              people, and strengthen the voice of young people by cooperating with
+              organizations working for them and supporting youth participation in
+              social life.
+            </p>
+
+            <p class="paragraph paragraph-center" style="margin-top: 18px;">
+              <a
+                href="https://www.polishyouth.org/about"
+                class="cta-button"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Więcej o Nas | More about Us →
+              </a>
+            </p>
+
+            <div class="divider"></div>
+
+            <!-- Events section -->
+            <table class="two-column" role="presentation">
+              <tr>
+                <td class="two-column-image-cell">
+                  <!-- Replace with your certificate / events image -->
+                  <img
+                    src="https://storage.googleapis.com/member-onboarding/image4.gif"
+                    alt="Events"
+                    class="gif"
+                  />
+                </td>
+                <td class="two-column-text-cell">
+                  <h2 class="section-title">Wydarzenia — Events</h2>
+                  <p class="paragraph">
+                    W ciągu roku organizujemy wiele wydarzeń dla młodzieży:
+                    wycieczek, konferencji, spotkań i wiele innych! Sprawdź, jakie
+                    wydarzenia organizowaliśmy poprzednio i w których możesz
+                    najbliższym czasie wziąć udział!
+                  </p>
+                  <p class="paragraph">
+                    During the year we organize many events for the youth: trips,
+                    networking, meetings, parties, and much more! Find out what events
+                    we’ve organized in the past and which events you can join in the
+                    near future!
+                  </p>
+                  <p class="paragraph">
+                    <a
+                      href="https://www.polishyouth.org/events"
+                      target="_blank"
+                      class="cta-button"
+                      rel="noopener noreferrer"
+                    >
+                      Wydarzenia | Events →
+                    </a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <div class="divider"></div>
+
+            <!-- Students section -->
+            <table class="two-column" role="presentation">
+              <tr>
+                <td class="two-column-text-cell">
+                  <h2 class="section-title">Dla Studentów — For Students</h2>
+                  <p class="paragraph">
+                    W ciągu roku organizujemy wiele wydarzeń dla młodzieży:
+                    wycieczek, konferencji, spotkań i wiele innych! Sprawdź, jakie
+                    wydarzenia organizowaliśmy poprzednio i w których możesz
+                    najbliższym czasie wziąć udział!
+                  </p>
+                  <p class="paragraph">
+                    During the year we organize many events for the youth: trips,
+                    networking, meetings, parties, and much more! Find out what events
+                    we’ve organized in the past and which events you can join in the
+                    near future!
+                  </p>
+                  <p class="paragraph">
+                    <a
+                      href="https://www.polishyouth.org/students"
+                      target="_blank"
+                      class="cta-button"
+                      rel="noopener noreferrer"
+                    >
+                      For Students | Dla Studentów →
+                    </a>
+                  </p>
+                </td>
+                <td class="two-column-image-cell">
+                  <!-- Replace with your students illustration -->
+                  <img
+                    src="https://storage.googleapis.com/member-onboarding/image3.gif"
+                    alt="Students"
+                    class="gif"
+                  />
+                </td>
+              </tr>
+            </table>
+
+            <div class="divider"></div>
+
+            <!-- Delegations section -->
+            <table class="two-column" role="presentation">
+              <tr>
+                <td class="two-column-image-cell">
+                  <!-- Replace with your delegations illustration -->
+                  <img
+                    src="https://storage.googleapis.com/member-onboarding/image8.gif"
+                    alt="Delegations"
+                  />
+                </td>
+                <td class="two-column-text-cell">
+                  <h2 class="section-title">Delegatury — Delegations</h2>
+                  <p class="paragraph">
+                    Jeżeli zapisałeś się spoza okręgu regionalnego naszej siedziby,
+                    sprawdź, czy obejmuje Ciebie jeden z naszych oddziałów! Delegatury
+                    mają przydzielony okręg regionalny, w którym prowadzą nasze
+                    programy (jeżeli mieszkasz/studiujesz w Chicago, podlegasz naszemu
+                    oddziałowi tam). Chcesz prowadzić oddział naszej organizacji w
+                    swoim regionie? Skontaktuj się z nami!
+                  </p>
+                  <p class="paragraph">
+                    If you signed up from outside the regional district of our
+                    headquarters, check if you live in the region of one of our
+                    branches! Our branches, called delegations, run our programs in
+                    other areas of the world (for example, if you live in Chicago,
+                    you’ll be working most closely with our branch there). Do you want
+                    to run a branch of our organization in your region? Let us know!
+                  </p>
+                  <p class="paragraph">
+                    <a
+                      href="https://www.polishyouth.org/delegations"
+                      target="_blank"
+                      class="cta-button"
+                      rel="noopener noreferrer"
+                    >
+                      Delegatury | Delegations →
+                    </a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <div class="divider"></div>
+
+            <!-- Contact section -->
+            <h2 class="section-title">Masz pytanie? · Have a question?</h2>
+            <p class="paragraph">
+              Napisz do nas za pośrednictwem formularza kontaktowego na naszej
+              stronie lub e-mailem na adres:
+              <a href="mailto:info@polishyouth.org">info@polishyouth.org</a>.
+              Skontaktuj się z nami we wszelkich sprawach młodzieży, w tym
+              dotyczących studentów, stypendiów, wolontariatu i nie tylko! Chcesz być
+              wolontariuszem w PSM? Daj nam znać!
+            </p>
+            <p class="paragraph">
+              Get in touch with us via the contact form on our website or by emailing
+              us at
+              <a href="mailto:info@polishyouth.org">info@polishyouth.org</a>.
+              Contact us with any matters youth including those pertaining to
+              students, scholarships, volunteering, and more! Want to volunteer for
+              us? Let us know!
+            </p>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td class="footer">
+            <div>Follow us on social media!</div>
+            <div class="footer-links">
+              <a
+                href="https://www.facebook.com/polishyouthassn"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Facebook</a
+              >
+              ·
+              <a
+                href="https://www.instagram.com/polishyouthassn"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Instagram</a
+              >
+              ·
+              <a
+                href="https://www.linkedin.com/company/polishyouthassn"
+                target="_blank"
+                rel="noopener noreferrer"
+                >LinkedIn</a
+              >
+              ·
+              <a
+                href="https://www.twitter.com/polishyouthassn"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Twitter</a
+              >
+            </div>
+
+            <p class="small" style="margin-top: 12px;">
+              Phone: +1 (929) 266-8324 ·
+              <a href="mailto:info@polishyouth.org">info@polishyouth.org</a> ·
+              <a href="https://www.polishyouth.org" target="_blank"
+                >www.polishyouth.org</a
+              >
+            </p>
+
+            <p class="small" style="margin-top: 8px;">
+              ©2025 Polskie Stowarzyszenie Młodzieży, Inc. jest organizacją
+              niedochodową zwolnioną z podatku na mocy sekcji 501(c)(3) Kodeksu
+              Podatkowego. The Polish Youth Association is a nonprofit, tax-exempt
+              organization under Section 501(c)(3) of the Internal Revenue Code.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </center>
+  </body>
+</html>
