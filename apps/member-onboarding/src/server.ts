@@ -7,26 +7,94 @@ import cors from 'cors';
 import multer from 'multer';
 import nodemailer from 'nodemailer';
 
-const {
-  SMTP_HOST,
-  SMTP_PORT,
-  SMTP_USER,
-  SMTP_PASS,
-  EMAIL_FROM,
-} = process.env;
+type SmtpConfig = {
+  SMTP_HOST: string;
+  SMTP_PORT: string | number;
+  SMTP_USER: string;
+  SMTP_PASS: string;
+  EMAIL_FROM: string;
+};
 
-const hasSmtpConfig =
-  Boolean(SMTP_HOST) &&
-  Boolean(SMTP_PORT) &&
-  Boolean(SMTP_USER) &&
-  Boolean(SMTP_PASS) &&
-  Boolean(EMAIL_FROM);
+function loadSmtpConfig(): SmtpConfig | null {
+  const raw = process.env.APP_CONFIG_JSON;
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as Partial<SmtpConfig>;
 
-if (!hasSmtpConfig) {
-  console.warn(
-    '⚠️ SMTP env vars are not fully set. /api/onboard will return 500 when called.',
-  );
+      const {
+        SMTP_HOST,
+        SMTP_PORT,
+        SMTP_USER,
+        SMTP_PASS,
+        EMAIL_FROM,
+      } = parsed;
+
+      if (
+        !SMTP_HOST ||
+        !SMTP_PORT ||
+        !SMTP_USER ||
+        !SMTP_PASS ||
+        !EMAIL_FROM
+      ) {
+        console.warn('APP_CONFIG_JSON is missing one or more SMTP_* fields');
+      } else {
+        return {
+          SMTP_HOST,
+          SMTP_PORT,
+          SMTP_USER,
+          SMTP_PASS,
+          EMAIL_FROM,
+        };
+      }
+    } catch (err) {
+      console.error('Failed to parse APP_CONFIG_JSON:', err);
+    }
+  }
+
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    EMAIL_FROM,
+  } = process.env;
+
+  if (
+    !SMTP_HOST ||
+    !SMTP_PORT ||
+    !SMTP_USER ||
+    !SMTP_PASS ||
+    !EMAIL_FROM
+  ) {
+    console.warn(
+      'SMTP env vars are not fully set. /api/onboard will return 500 when called.',
+    );
+    return null;
+  }
+
+  return {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    EMAIL_FROM,
+  };
 }
+
+const smtpConfig = loadSmtpConfig();
+const hasSmtpConfig = Boolean(smtpConfig);
+
+const transporter = smtpConfig
+  ? nodemailer.createTransport({
+      host: smtpConfig.SMTP_HOST,
+      port: Number(smtpConfig.SMTP_PORT),
+      secure: Number(smtpConfig.SMTP_PORT) === 465,
+      auth: {
+        user: smtpConfig.SMTP_USER,
+        pass: smtpConfig.SMTP_PASS,
+      },
+    })
+  : null;
 
 let emailTemplate: string | null = null;
 
@@ -77,20 +145,6 @@ function renderNewMemberEmail(params: {
     .replace(/\[First Name English\]/g, params.firstNameEnglish)
     .replace(/\[MEMBERSHIP_ID\]/g, params.memberId);
 }
-
-const transporter = hasSmtpConfig
-  ? nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: Number(SMTP_PORT),
-      secure: Number(SMTP_PORT) === 465,
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-    })
-  : null;
-
-const app = express();
 
 app.use(cors());
 app.use(express.json());
