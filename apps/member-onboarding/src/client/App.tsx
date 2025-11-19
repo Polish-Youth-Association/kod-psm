@@ -67,9 +67,9 @@ export const App: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#0f172a',
+        background: '#ffffff',
         padding: '1.5rem',
-        color: '#e5e7eb',
+        color: '#1f2937',
         fontFamily:
           'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       }}
@@ -78,31 +78,31 @@ export const App: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: 480,
-          background: '#020617',
+          background: '#ffffff',
           borderRadius: 16,
           padding: '1.75rem',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.35)',
-          border: '1px solid rgba(148,163,184,0.25)',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
+          border: '1px solid #e5e7eb',
         }}
       >
-        <h1 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>
+        <h1 style={{ fontSize: '1.5rem', marginBottom: '0.25rem', color: '#111827' }}>
           New member onboarding
         </h1>
         <p
           style={{
             fontSize: '0.875rem',
-            color: '#9ca3af',
+            color: '#6b7280',
             marginBottom: '1.25rem',
           }}
         >
           Fill in the member details and optionally attach their certificate PDF.
         </p>
-
+  
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '0.9rem' }}>
           <div>
             <label
               htmlFor="firstNamePolish"
-              style={{ fontSize: '0.8rem', color: '#9ca3af' }}
+              style={{ fontSize: '0.8rem', color: '#374151' }}
             >
               First name (Polish)
             </label>
@@ -115,11 +115,11 @@ export const App: React.FC = () => {
               style={inputStyle}
             />
           </div>
-
+  
           <div>
             <label
               htmlFor="firstNameEnglish"
-              style={{ fontSize: '0.8rem', color: '#9ca3af' }}
+              style={{ fontSize: '0.8rem', color: '#374151' }}
             >
               First name (English)
             </label>
@@ -132,9 +132,9 @@ export const App: React.FC = () => {
               style={inputStyle}
             />
           </div>
-
+  
           <div>
-            <label htmlFor="email" style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+            <label htmlFor="email" style={{ fontSize: '0.8rem', color: '#374151' }}>
               Recipient email
             </label>
             <input
@@ -146,11 +146,11 @@ export const App: React.FC = () => {
               style={inputStyle}
             />
           </div>
-
+  
           <div>
             <label
               htmlFor="memberId"
-              style={{ fontSize: '0.8rem', color: '#9ca3af' }}
+              style={{ fontSize: '0.8rem', color: '#374151' }}
             >
               Member ID
             </label>
@@ -163,11 +163,11 @@ export const App: React.FC = () => {
               style={inputStyle}
             />
           </div>
-
+  
           <div>
             <label
               htmlFor="certificate-input"
-              style={{ fontSize: '0.8rem', color: '#9ca3af' }}
+              style={{ fontSize: '0.8rem', color: '#374151' }}
             >
               Certificate PDF (optional)
             </label>
@@ -179,11 +179,12 @@ export const App: React.FC = () => {
               style={{
                 marginTop: '0.25rem',
                 fontSize: '0.8rem',
-                color: '#e5e7eb',
+                color: '#1f2937',
               }}
             />
           </div>
-
+  
+          {/* GOLD BUTTON */}
           <button
             type="submit"
             disabled={status === 'loading'}
@@ -194,23 +195,31 @@ export const App: React.FC = () => {
               padding: '0.6rem 1rem',
               background:
                 status === 'loading'
-                  ? '#4b5563'
-                  : 'linear-gradient(135deg,#6366f1,#ec4899)',
-              color: '#f9fafb',
-              fontWeight: 500,
+                  ? '#d4d4d4'
+                  : '#d4af37', // Bright Gold
+              color: '#111827',
+              fontWeight: 600,
               fontSize: '0.9rem',
               cursor: status === 'loading' ? 'default' : 'pointer',
-              transition: 'transform 0.1s ease, box-shadow 0.1s ease',
-              boxShadow:
-                status === 'loading'
-                  ? 'none'
-                  : '0 10px 20px rgba(59,130,246,0.35)',
+              transition: 'background 0.2s ease, transform 0.1s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (status !== 'loading') (e.currentTarget.style.background = '#e6c557');
+            }}
+            onMouseLeave={(e) => {
+              if (status !== 'loading') (e.currentTarget.style.background = '#d4af37');
+            }}
+            onMouseDown={(e) => {
+              if (status !== 'loading') (e.currentTarget.style.background = '#c9981f');
+            }}
+            onMouseUp={(e) => {
+              if (status !== 'loading') (e.currentTarget.style.background = '#d4af37');
             }}
           >
             {status === 'loading' ? 'Sending…' : 'Send onboarding email'}
           </button>
         </form>
-
+  
         {status !== 'idle' && (
           <p
             style={{
@@ -218,10 +227,10 @@ export const App: React.FC = () => {
               fontSize: '0.8rem',
               color:
                 status === 'success'
-                  ? '#4ade80'
+                  ? '#16a34a' // Green
                   : status === 'error'
-                  ? '#f97373'
-                  : '#9ca3af',
+                  ? '#dc2626' // Red
+                  : '#374151',
             }}
           >
             {message}
@@ -233,15 +242,15 @@ export const App: React.FC = () => {
 };
 
 const inputStyle: React.CSSProperties = {
-  width: '100%',
-  marginTop: '0.25rem',
-  padding: '0.5rem 0.6rem',
-  borderRadius: 999,
-  border: '1px solid rgba(148,163,184,0.45)',
-  background: '#020617',
-  color: '#e5e7eb',
-  fontSize: '0.85rem',
-  outline: 'none',
-};
+    width: '100%',
+    marginTop: '0.25rem',
+    padding: '0.5rem 0.6rem',
+    borderRadius: 999,
+    border: '1px solid #d1d5db',
+    background: '#f9fafb',
+    color: '#111827',
+    fontSize: '0.85rem',
+    outline: 'none',
+  };
 
 export default App;
