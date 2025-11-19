@@ -17,10 +17,10 @@ type SmtpConfig = {
 
 function loadSmtpConfig(): SmtpConfig | null {
   const raw = process.env.APP_CONFIG_JSON;
+
   if (raw) {
     try {
       const parsed = JSON.parse(raw) as Partial<SmtpConfig>;
-
       const {
         SMTP_HOST,
         SMTP_PORT,
@@ -36,7 +36,7 @@ function loadSmtpConfig(): SmtpConfig | null {
         !SMTP_PASS ||
         !EMAIL_FROM
       ) {
-        console.warn('APP_CONFIG_JSON is missing one or more SMTP_* fields');
+        console.warn('APP_CONFIG_JSON missing some SMTP_* fields');
       } else {
         return {
           SMTP_HOST,
@@ -59,15 +59,9 @@ function loadSmtpConfig(): SmtpConfig | null {
     EMAIL_FROM,
   } = process.env;
 
-  if (
-    !SMTP_HOST ||
-    !SMTP_PORT ||
-    !SMTP_USER ||
-    !SMTP_PASS ||
-    !EMAIL_FROM
-  ) {
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !EMAIL_FROM) {
     console.warn(
-      'SMTP env vars are not fully set. /api/onboard will return 500 when called.',
+      'SMTP env vars not fully set. /api/onboard will return 500.',
     );
     return null;
   }
@@ -108,10 +102,9 @@ function loadNewMemberTemplate(): string | null {
 
   try {
     emailTemplate = fs.readFileSync(templatePath, 'utf8');
-    console.log('✅ Loaded NewMembersEmailTemplate.html from', templatePath);
+    console.log('Loaded NewMembersEmailTemplate.html');
   } catch (err) {
-    console.error('❌ Failed to load email template from', templatePath, err);
-    console.warn('⚠️ Could not load email template. Falling back to inline HTML.');
+    console.error('Failed to load email template', err);
     emailTemplate = null;
   }
 
@@ -127,33 +120,33 @@ function renderNewMemberEmail(params: {
 
   if (!base) {
     return `
-      <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.5;">
+      <div>
         <h2>Welcome to Polish Youth Association!</h2>
         <p>Dear ${params.firstNamePolish} (${params.firstNameEnglish}),</p>
         <p>Your membership ID is <strong>${params.memberId}</strong>.</p>
-        <p>Serdecznie pozdrawiamy,<br/>Polish Youth Association</p>
       </div>
     `;
   }
 
   return base
+    // new style placeholders
     .replace(/{{\s*firstNamePolish\s*}}/gi, params.firstNamePolish)
     .replace(/{{\s*firstNameEnglish\s*}}/gi, params.firstNameEnglish)
     .replace(/{{\s*memberId\s*}}/gi, params.memberId)
-
+    // legacy placeholders
     .replace(/\[First Name Polish\]/g, params.firstNamePolish)
     .replace(/\[First Name English\]/g, params.firstNameEnglish)
     .replace(/\[MEMBERSHIP_ID\]/g, params.memberId);
 }
+
+const app = express();
 
 app.use(cors());
 app.use(express.json());
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024,
-  },
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -166,9 +159,9 @@ app.post(
   async (req: Request, res: Response) => {
     try {
       if (!hasSmtpConfig || !transporter) {
-        return res
-          .status(500)
-          .json({ error: 'Email transport not configured on server.' });
+        return res.status(500).json({
+          error: 'Email transport not configured on server.',
+        });
       }
 
       const {
@@ -176,17 +169,16 @@ app.post(
         firstNameEnglish,
         email,
         memberId,
-      } = req.body as Record<string, string>;
+      } = req.body;
 
       if (!firstNamePolish || !firstNameEnglish || !email || !memberId) {
         return res.status(400).json({
           error:
-            'Missing required fields. firstNamePolish, firstNameEnglish, email, memberId are required.',
+            'Missing required fields: firstNamePolish, firstNameEnglish, email, memberId',
         });
       }
 
       const certFile = req.file || null;
-
       const htmlBody = renderNewMemberEmail({
         firstNamePolish,
         firstNameEnglish,
@@ -194,22 +186,16 @@ app.post(
       });
 
       const attachments = certFile
-        ? [
-            {
-              filename:
-                certFile.originalname ||
-                `Member_Certificate_${memberId}.pdf`,
-              content: certFile.buffer,
-              contentType:
-                certFile.mimetype || 'application/pdf',
-            },
-          ]
+        ? [{
+            filename: certFile.originalname || `Member_Certificate_${memberId}.pdf`,
+            content: certFile.buffer,
+            contentType: certFile.mimetype || 'application/pdf',
+          }]
         : [];
 
       const mailOptions = {
-        // You can use SMTP_USER or EMAIL_FROM here depending on how Gmail is configured
-        from: `"PSM Onboarding" <${EMAIL_FROM || SMTP_USER}>`,
-        to: email, // send to the new member
+        from: `"PSM Onboarding" <${smtpConfig!.EMAIL_FROM || smtpConfig!.SMTP_USER}>`,
+        to: email,
         subject: `Welcome to Polish Youth Association! (ID: ${memberId})`,
         html: htmlBody,
         attachments,
@@ -217,21 +203,20 @@ app.post(
 
       await transporter.sendMail(mailOptions);
 
-      console.log('✅ Onboarding email sent for member:', memberId);
+      console.log('Sent onboarding email for member:', memberId);
 
       return res.json({ ok: true, message: 'Onboarding email sent.' });
     } catch (err) {
-      console.error('❌ Error in /api/onboard:', err);
+      console.error('Error in /api/onboard:', err);
       return res.status(500).json({ error: 'Internal server error.' });
     }
   },
 );
 
 const clientDistPath = path.join(__dirname, 'client');
-
 app.use(express.static(clientDistPath));
 
-app.get('*', (_req, res) => {
+app.get('*', (_req: Request, res: Response) => {
   const indexPath = path.join(clientDistPath, 'index.html');
   if (!fs.existsSync(indexPath)) {
     return res.status(500).send('Client build not found');
@@ -241,5 +226,5 @@ app.get('*', (_req, res) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`🚀 member-onboarding app listening on port ${PORT}`);
+  console.log(`member-onboarding app listening on port ${PORT}`);
 });
