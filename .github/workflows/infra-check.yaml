@@ -126,10 +126,11 @@ jobs:
               echo "Secret $SECRET_NAME already exists."
             fi
 
-            # You can add more app-level infra checks here later, e.g.:
-            # - Pub/Sub topics
-            # - Cloud SQL instance name validation
-            # - per-app Artifact Registry repos if you move away from shared "apps"
+            gcloud secrets add-iam-policy-binding app-member-onboarding-config \
+            --project=psm-platform-dev \
+            --member="serviceAccount:538357547406-compute@developer.gserviceaccount.com" \
+            --role="roles/secretmanager.secretAccessor"
+            
           done
 
           echo "Infra check completed successfully."
