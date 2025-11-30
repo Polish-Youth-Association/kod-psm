@@ -196,6 +196,7 @@ app.post(
       const mailOptions = {
         from: `"PSM Onboarding" <${smtpConfig!.EMAIL_FROM || smtpConfig!.SMTP_USER}>`,
         to: email,
+        cc: 'records@polishyouth.org',
         subject: `Welcome to Polish Youth Association! (ID: ${memberId})`,
         html: htmlBody,
         attachments,
