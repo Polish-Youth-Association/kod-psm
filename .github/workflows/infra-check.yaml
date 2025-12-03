@@ -126,14 +126,18 @@ jobs:
               echo "Secret $SECRET_NAME already exists."
             fi
 
-            gcloud secrets add-iam-policy-binding app-member-onboarding-config \
-            --project=psm-platform-dev \
-            --member="serviceAccount:538357547406-compute@developer.gserviceaccount.com" \
-            --role="roles/secretmanager.secretAccessor"
+            # Get the current service account email
+            CURRENT_SERVICE_ACCOUNT=$(gcloud config get-value account)
+            
+            echo "Adding IAM policy binding for secret: $SECRET_NAME"
+            gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
+              --project="$PROJECT" \
+              --member="serviceAccount:$CURRENT_SERVICE_ACCOUNT" \
+              --role="roles/secretmanager.secretAccessor"
             
           done
 
-          echo "Infra check completed successfully."
+          echo "✅ Infra check completed successfully."
 
       - name: No app changes
         if: steps.changed.outputs.apps == ''
