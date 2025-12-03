@@ -12,9 +12,11 @@ apps:
     region: "us-central1"
     artifact_repo: "member-onboarding"
     secret_prefix: "member-onboarding"
-    secrets:
-      - SMTP_HOST
-      - SMTP_PORT
-      - SMTP_USERNAME
-      - SMTP_PASSWORD
-      - EMAIL_SENDER
+    secrets: []
+  - id: certificate-generator
+    name: "Certificate-Generator"
+    path: "apps/certificate-generator"
+    region: "us-central1"
+    artifact_repo: "certificate-generator"
+    secret_prefix: "certificate-generator"
+    secrets: []
