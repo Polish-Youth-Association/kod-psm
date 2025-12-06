@@ -10,7 +10,9 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
   "dependencies": {
+    "@kod-psm/gcp-helpers": "workspace:*",
     "@google-cloud/storage": "^7.7.0",
+    "@pdf-lib/fontkit": "^1.1.1",
     "express": "^4.21.2",
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.13.0",
