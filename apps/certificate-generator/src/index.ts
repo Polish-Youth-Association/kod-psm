@@ -121,7 +121,7 @@ app.post('/generate-certificate', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(
-    'Certificate-Generator (certificate-generator) running on port ' +
+    '🚀 Certificate-Generator (certificate-generator) running on port ' +
       PORT,
   );
 });
