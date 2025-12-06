@@ -40,6 +40,7 @@ app.post('/generate-certificate', async (req, res) => {
   try {
     const { memberId, firstName, lastName } = req.body;
 
+    // Validate input
     if (!memberId || !firstName || !lastName) {
       return res.status(400).json({
         ok: false,
