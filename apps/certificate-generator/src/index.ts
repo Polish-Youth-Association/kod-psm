@@ -7,7 +7,6 @@ import { initStorage } from '@kod-psm/gcp-helpers';
 
 const app = express();
 app.use(express.json());
-
 const PORT = process.env.PORT || 8080;
 
 const CERT_TEMPLATE_PATH = path.resolve(
