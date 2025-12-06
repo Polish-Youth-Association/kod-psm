@@ -1,29 +1,34 @@
 import express from 'express';
-import { Storage } from '@google-cloud/storage';
-import { v4 as uuidv4 } from 'uuid';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'node:fs/promises';
+import fontkit from '@pdf-lib/fontkit';
 import path from 'node:path';
+import { initStorage } from '@kod-psm/gcp-helpers';
 
 const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 8080;
-const BUCKET_NAME = process.env.GCP_BUCKET_NAME || 'certificates';
-const PROJECT_ID = process.env.GCP_PROJECT_ID || '';
 
-// Initialize GCP Storage
-const storage = new Storage({
-  projectId: PROJECT_ID,
-});
-
-const bucket = storage.bucket(BUCKET_NAME);
-
-// Path to your template inside the container
 const CERT_TEMPLATE_PATH = path.resolve(
   __dirname,
-  '../templates/Cert Template.pdf'
+  '../templates/CertTemplate.pdf'
 );
+
+const LOCAL_OUTPUT_DIR = path.resolve(
+  __dirname,
+  '../generated_files',
+);
+
+const storage = initStorage({
+  bucketName: process.env.GCP_BUCKET_NAME,
+  projectId: process.env.GCP_PROJECT_ID,
+  localBaseDir: LOCAL_OUTPUT_DIR,
+});
+
+async function ensureGeneratedDir() {
+  await fs.mkdir(LOCAL_OUTPUT_DIR, { recursive: true });
+}
 
 app.get('/', (_req, res) => {
   res.json({
@@ -43,78 +48,67 @@ app.post('/generate-certificate', async (req, res) => {
         error: 'Missing required fields: memberId, firstName, lastName',
       });
     }
+    await ensureGeneratedDir();
 
-    // 1) Load template PDF from disk
     const templateBytes = await fs.readFile(CERT_TEMPLATE_PATH);
     const pdfDoc = await PDFDocument.load(templateBytes);
 
-    // 2) Prepare fonts and page
     const [page] = pdfDoc.getPages();
     const { width, height } = page.getSize();
+    
+    const customBoldFontBytes = await fs.readFile(
+      path.resolve(__dirname, '../templates/fonts/WixMadeforText-Bold.ttf')
+    );
 
-    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    pdfDoc.registerFontkit(fontkit);
+    const boldFont = await pdfDoc.embedFont(customBoldFontBytes);
 
     const fullName = `${firstName} ${lastName}`;
-
-    // 3) Draw text on top of the template
-    // NOTE: coordinates are examples; you’ll likely tweak them until they line
-    // up perfectly with your placeholders.
-    // Origin is bottom-left.
+    const fontSizeName = 30
+    const textWidth = boldFont.widthOfTextAtSize(fullName, fontSizeName);
+    const centeredX = (width - textWidth) / 2;
+    
     page.drawText(fullName, {
-      x: 200,             // adjust to land on the name line
-      y: height - 340,    // tweak until it overlays correctly
-      size: 32,
+      x: centeredX,
+      y: height - 285,
+      size: fontSizeName,
       font: boldFont,
       color: rgb(0, 0, 0),
     });
 
     page.drawText(memberId, {
-      x: 260,             // adjust horizontally for membership ID spot
-      y: height - 535,    // adjust vertically
+      x: 120,
+      y: height - 525,
       size: 18,
       font: boldFont,
       color: rgb(0, 0, 0),
     });
 
-    // If you want to **hide** the literal {{…}} text in the template, you can
-    // draw a white rectangle over that area *before* drawing the text:
-    //
-    // page.drawRectangle({
-    //   x: 180,
-    //   y: height - 370,
-    //   width: 500,
-    //   height: 60,
-    //   color: rgb(1, 1, 1),
-    // });
-
-    // 4) Finalize PDF to bytes
     const pdfBytes = await pdfDoc.save();
 
-    // 5) Save to GCS
-    const certificateId = uuidv4();
-    const fileName = `certificates/${certificateId}.pdf`;
-    const file = bucket.file(fileName);
+    const certificateId = `${memberId}`.toUpperCase();
+    const objectPath = `certificates/${certificateId}.pdf`;
 
-    await file.save(pdfBytes, {
-      contentType: 'application/pdf',
-      metadata: {
-        metadata: {
-          memberId,
-          firstName,
-          lastName,
-          generatedAt: new Date().toISOString(),
-        },
+    const result = await storage.saveFile(
+      pdfBytes,
+      objectPath,
+      'application/pdf',
+      {
+        memberId,
+        firstName,
+        lastName,
+        generatedAt: new Date().toISOString(),
       },
-    });
+    );
 
-    // 6) Respond
     return res.json({
       ok: true,
-      message: 'Certificate generated successfully',
+      message:
+        result.backend === 'gcs'
+          ? 'Certificate generated and stored in Cloud Storage'
+          : 'Certificate generated and stored locally',
       certificateId,
-      fileName,
-      downloadUrl: `https://storage.googleapis.com/${BUCKET_NAME}/${fileName}`,
+      ...result,
     });
   } catch (err) {
     console.error('Error generating certificate:', err);
@@ -127,6 +121,7 @@ app.post('/generate-certificate', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(
-    '🚀 Certificate-Generator (certificate-generator) running on port ' + PORT
+    '🚀 Certificate-Generator (certificate-generator) running on port ' +
+      PORT,
   );
 });
