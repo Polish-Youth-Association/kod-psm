@@ -29,8 +29,11 @@ WORKDIR /app
 COPY --from=builder /app/apps/certificate-generator/dist ./dist
 COPY --from=builder /app/apps/certificate-generator/templates ./templates
 COPY --from=builder /app/apps/certificate-generator/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
 
+RUN corepack enable && corepack prepare pnpm@10.22.0 --activate \
+    && pnpm install --prod
+
+# Cloud Run runtime
 ENV PORT=8080
 EXPOSE 8080
 
