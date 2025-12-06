@@ -92,11 +92,12 @@ jobs:
             IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
 
             echo "::group::Building image for $APP"
-            # Build using the app's Dockerfile and its directory as context
-            # Assumes: apps/$APP/Dockerfile exists
-            gcloud builds submit "apps/$APP" \
+
+            gcloud builds submit . \
               --tag="$IMAGE" \
-              --project="$GCP_PROJECT_ID"
+              --project="$GCP_PROJECT_ID" \
+              --file="apps/$APP/Dockerfile"
+
             echo "::endgroup::"
 
             echo "::group::Deploying $SERVICE to Cloud Run"
@@ -105,7 +106,6 @@ jobs:
               --region="$GCP_REGION" \
               --platform=managed \
               --project="$GCP_PROJECT_ID" \
-              --set-secrets=APP_CONFIG_JSON=app-member-onboarding-config:latest
 
             echo "=== Wiring IAP + domain access for $SERVICE ==="
 
