@@ -90,14 +90,14 @@ jobs:
           for APP in $APPS; do
             SERVICE="$APP"
             IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
-
+          
             echo "::group::Building image for $APP"
-
+          
             gcloud builds submit . \
-              --tag="$IMAGE" \
               --project="$GCP_PROJECT_ID" \
-              --file="apps/$APP/Dockerfile"
-
+              --config=infra/cloudbuild.docker.yaml \
+              --substitutions=_APP="$APP",_IMAGE="$IMAGE"
+          
             echo "::endgroup::"
 
             echo "::group::Deploying $SERVICE to Cloud Run"
