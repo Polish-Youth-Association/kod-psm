@@ -16,6 +16,7 @@ COPY apps/certificate-generator ./apps/certificate-generator
 
 RUN pnpm install --frozen-lockfile --filter "@kod-psm/certificate-generator..."
 RUN pnpm -r --filter "@kod-psm/certificate-generator..." run build
+RUN pnpm --filter "@kod-psm/certificate-generator" deploy --prod /out
 
 FROM node:22-slim AS runtime
 WORKDIR /app
