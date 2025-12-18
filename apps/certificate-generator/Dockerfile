@@ -1,40 +1,33 @@
-# ---------- BUILDER ----------
 FROM node:22-slim AS builder
-WORKDIR /app
+WORKDIR /repo
 
-# pnpm
 RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
-# Copy monorepo metadata
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+# ---- copy workspace manifests first (cache-friendly)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy all workspace packages (apps + libs)
-COPY apps ./apps
-COPY libs ./libs
+# copy package manifests so pnpm can resolve workspace deps
+COPY libs/*/package.json ./libs/
+COPY apps/certificate-generator/package.json ./apps/certificate-generator/
 
-# Install deps for the whole workspace
-RUN pnpm install --frozen-lockfile
+# install only this app + its deps (including libs/* workspace packages)
+RUN pnpm install --frozen-lockfile --filter ./apps/certificate-generator...
 
-# Build shared libs first (so types & dist exist)
-RUN pnpm --filter @kod-psm/gcp-helpers run build
+# now copy the full repo sources
+COPY . .
 
-# Build the certificate-generator app
-RUN pnpm --filter @kod-psm/certificate-generator run build
+# build just this app (and any libs it depends on if your scripts are correct)
+RUN pnpm -r --filter ./apps/certificate-generator... run build
 
-# ---------- RUNTIME ----------
 FROM node:22-slim AS runtime
 WORKDIR /app
-
-# Copy only what we need to run the app
-COPY --from=builder /app/apps/certificate-generator/dist ./dist
-COPY --from=builder /app/apps/certificate-generator/templates ./templates
-COPY --from=builder /app/apps/certificate-generator/package.json ./package.json
-
-RUN corepack enable && corepack prepare pnpm@10.22.0 --activate \
-    && pnpm install --prod
-
-# Cloud Run runtime
+ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
+
+# copy only what we need for runtime
+COPY --from=builder /repo/apps/certificate-generator/dist ./dist
+COPY --from=builder /repo/apps/certificate-generator/package.json ./
+COPY --from=builder /repo/node_modules ./node_modules
 
 CMD ["node", "dist/index.js"]
