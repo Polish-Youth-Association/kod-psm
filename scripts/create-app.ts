@@ -128,6 +128,7 @@ async function main() {
   const defaultSlug = slugify(appName);
   const appSlugInput = await ask(`App ID/slug [${defaultSlug}]: `);
   const appSlug = appSlugInput || defaultSlug;
+  const pkgName = `@kod-psm/${appSlug}`;
 
   const defaultRegion = 'us-central1';
   const regionInput = await ask(`GCP region [${defaultRegion}]: `);
@@ -239,34 +240,27 @@ app.listen(PORT, () => {
   const dockerfile = `
   FROM node:22-slim AS builder
   WORKDIR /repo
-  
+
   RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
-  
-  # workspace files
+
   COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-  
-  # copy only what we need for this build (preserves folder structure)
   COPY libs ./libs
   COPY apps/${appSlug} ./apps/${appSlug}
-  
-  # If you have shared root configs, copy them too (uncomment if they exist)
-  # COPY tsconfig.base.json ./
-  # COPY .npmrc ./
-  
-  RUN pnpm install --frozen-lockfile --filter ./apps/${appSlug}...
-  
-  RUN pnpm -r --filter ./apps/${appSlug}... run build
-  
+
+  # Use package-name filter (most reliable)
+  RUN pnpm install --frozen-lockfile --filter "${pkgName}..."
+  RUN pnpm -r --filter "${pkgName}..." run build
+
   FROM node:22-slim AS runtime
   WORKDIR /app
   ENV NODE_ENV=production
   ENV PORT=8080
   EXPOSE 8080
-  
+
   COPY --from=builder /repo/apps/${appSlug}/dist ./dist
   COPY --from=builder /repo/apps/${appSlug}/package.json ./
   COPY --from=builder /repo/node_modules ./node_modules
-  
+
   CMD ["node", "dist/index.js"]
   `.trimStart();
 
