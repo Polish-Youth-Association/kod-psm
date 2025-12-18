@@ -260,6 +260,7 @@ app.listen(PORT, () => {
   COPY --from=builder /repo/apps/${appSlug}/dist ./dist
   COPY --from=builder /repo/apps/${appSlug}/package.json ./
   COPY --from=builder /repo/node_modules ./node_modules
+  COPY --from=builder /repo/libs ./libs
 
   CMD ["node", "dist/index.js"]
   `.trimStart();

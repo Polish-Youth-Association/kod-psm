@@ -26,5 +26,6 @@ EXPOSE 8080
 COPY --from=builder /repo/apps/certificate-generator/dist ./dist
 COPY --from=builder /repo/apps/certificate-generator/package.json ./
 COPY --from=builder /repo/node_modules ./node_modules
+COPY --from=builder /repo/libs ./libs
 
 CMD ["node", "dist/index.js"]
