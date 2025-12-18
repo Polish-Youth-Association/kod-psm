@@ -14,9 +14,8 @@ COPY apps/certificate-generator ./apps/certificate-generator
 # COPY tsconfig.base.json ./
 # COPY .npmrc ./
 
-RUN pnpm install --frozen-lockfile --filter ./apps/certificate-generator...
-
-RUN pnpm -r --filter ./apps/certificate-generator... run build
+RUN pnpm install --frozen-lockfile --filter "@kod-psm/certificate-generator..."
+RUN pnpm -r --filter "@kod-psm/certificate-generator..." run build
 
 FROM node:22-slim AS runtime
 WORKDIR /app
