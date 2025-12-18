@@ -16,7 +16,7 @@ COPY apps/certificate-generator ./apps/certificate-generator
 
 RUN pnpm install --frozen-lockfile --filter ./apps/certificate-generator...
 
-RUN pnpm -C apps/certificate-generator run build
+RUN pnpm -r --filter ./apps/certificate-generator... run build
 
 FROM node:22-slim AS runtime
 WORKDIR /app

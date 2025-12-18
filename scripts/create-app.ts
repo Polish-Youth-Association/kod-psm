@@ -255,7 +255,7 @@ app.listen(PORT, () => {
   
   RUN pnpm install --frozen-lockfile --filter ./apps/${appSlug}...
   
-  RUN pnpm -C apps/${appSlug} run build
+  RUN pnpm -r --filter ./apps/${appSlug}... run build
   
   FROM node:22-slim AS runtime
   WORKDIR /app
