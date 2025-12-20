@@ -6,7 +6,7 @@ const app = createApp((router) => {
   router.get('/', (_req, res) => {
     res.json({
       ok: true,
-      service: 'example',
+      service: 'example!',
     });
   });
 });
