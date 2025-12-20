@@ -1,17 +1,16 @@
-import express from 'express';
+import { createApp, listen } from '@kod-psm/http-helpers';
 
-const app = express();
-app.use(express.json());
+const PORT = Number(process.env.PORT) || 8080;
 
-const PORT = process.env.PORT || 8080;
-
-app.get('/', (_req, res) => {
-  res.json({
-    ok: true,
-    service: 'example',
+const app = createApp((router) => {
+  router.get('/', (_req, res) => {
+    res.json({
+      ok: true,
+      service: 'example',
+    });
   });
 });
 
-app.listen(PORT, () => {
+listen(app, PORT, () => {
   console.log('🚀 example (example) running on port ' + PORT);
 });
