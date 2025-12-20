@@ -10,7 +10,7 @@ Each deployable app can describe the Google Cloud IAM bindings it needs in an `i
 
 ```yaml
 # apps/<app>/iam.yaml
-serviceAccount: projects/<project>/serviceAccounts/<sa-name>@<project>.iam.gserviceaccount.com
+serviceAccount: <service-account>@PROJECT_ID.iam.gserviceaccount.com
 roles:
   # project-level bindings
   - roles/run.invoker
@@ -28,9 +28,9 @@ resources:
 
 | Field | Required | Description |
 | ----- | -------- | ----------- |
-| `serviceAccount` | ✅ | Target principal (usually the deployed Cloud Run service account). |
+| `serviceAccount` | ✅ | Target principal (usually the Cloud Run service account). Use either the service-account email (e.g. `api-svc@PROJECT_ID.iam.gserviceaccount.com`) or the full resource path. The literal string `PROJECT_ID` will be replaced automatically with the current deploy project. |
 | `roles` | ✅ | Project-level roles to bind to the service account. |
-| `resources` | Optional | List of resource-specific bindings. Each item needs a `type`, `name`, and `roles`. The meaning of `name` depends on the resource type (for example `gs://bucket-name` for Cloud Storage buckets). |
+| `resources` | Optional | List of resource-specific bindings. Each item needs a `type`, `name`, and `roles`. The meaning of `name` depends on the resource type (for example `gs://bucket-name` for Cloud Storage buckets). `PROJECT_ID` placeholders are also replaced. |
 
 ## How it is used
 

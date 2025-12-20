@@ -58,6 +58,11 @@ function readAppsYaml(filePath) {
   return apps;
 }
 
+function replacePlaceholders(value, projectId) {
+  if (typeof value !== "string") return value;
+  return value.replace(/PROJECT_ID/g, projectId);
+}
+
 function parseIamManifest(filePath) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`Missing IAM manifest at ${filePath}`);
@@ -140,6 +145,57 @@ function parseIamManifest(filePath) {
   return manifest;
 }
 
+function normalizeServiceAccount(raw, projectId) {
+  const replaced = replacePlaceholders(raw, projectId);
+  if (!replaced) {
+    throw new Error("serviceAccount value cannot be empty");
+  }
+
+  let email = replaced;
+
+  if (replaced.startsWith("projects/")) {
+    const parts = replaced.split("/");
+    email = parts[parts.length - 1];
+  } else if (!replaced.includes("@")) {
+    email = `${replaced}@${projectId}.iam.gserviceaccount.com`;
+  }
+
+  if (!email.includes("@")) {
+    throw new Error(
+      `Service account "${raw}" must include an email or projects/... path`
+    );
+  }
+
+  return { email };
+}
+
+function ensureServiceAccount(projectId, email, appId) {
+  try {
+    run(
+      [
+        "gcloud iam service-accounts describe",
+        email,
+        `--project="${projectId}"`,
+        "--quiet"
+      ].join(" ")
+    );
+    return;
+  } catch (err) {
+    console.log(`Service account ${email} not found. Creating it...`);
+  }
+
+  const accountId = email.split("@")[0];
+  run(
+    [
+      "gcloud iam service-accounts create",
+      accountId,
+      `--project="${projectId}"`,
+      `--display-name="${appId} service account"`,
+      "--quiet"
+    ].join(" ")
+  );
+}
+
 function run(cmd, options = {}) {
   console.log(`$ ${cmd}`);
   execSync(cmd, { stdio: "inherit", ...options });
@@ -213,11 +269,22 @@ function main() {
   }
   const manifestPath = path.join(repoRoot, appConfig.iam_file);
   const manifest = parseIamManifest(manifestPath);
-  const member = `serviceAccount:${manifest.serviceAccount}`;
+  const { email: serviceAccountEmail } = normalizeServiceAccount(
+    manifest.serviceAccount,
+    projectId
+  );
 
-  console.log(`Applying IAM bindings for ${appId} (${manifest.serviceAccount})`);
+  ensureServiceAccount(projectId, serviceAccountEmail, appId);
+
+  const member = `serviceAccount:${serviceAccountEmail}`;
+  const resolvedResources = (manifest.resources || []).map((resource) => ({
+    ...resource,
+    name: resource.name ? replacePlaceholders(resource.name, projectId) : resource.name
+  }));
+
+  console.log(`Applying IAM bindings for ${appId} (${serviceAccountEmail})`);
   applyProjectRoles(projectId, member, manifest.roles);
-  applyResourceBindings(projectId, member, manifest.resources || []);
+  applyResourceBindings(projectId, member, resolvedResources);
   console.log(`IAM bindings applied for ${appId}`);
 }
 
