@@ -88,6 +88,10 @@ jobs:
           echo "Apps to deploy: $APPS"
 
           for APP in $APPS; do
+            echo "::group::Applying IAM for $APP"
+            node scripts/apply-iam.js --app "$APP" --project "${GCP_PROJECT_ID}"
+            echo "::endgroup::"
+
             SERVICE="$APP"
             IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
           

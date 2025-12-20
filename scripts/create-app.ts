@@ -11,6 +11,7 @@ type AppConfig = {
   region: string;
   artifact_repo: string;
   secret_prefix: string;
+  iam_file?: string;
   secrets: string[];
 };
 
@@ -109,6 +110,9 @@ function writeAppsYaml(filePath: string, apps: AppsYaml) {
     lines.push(`    region: "${app.region}"`);
     lines.push(`    artifact_repo: "${app.artifact_repo}"`);
     lines.push(`    secret_prefix: "${app.secret_prefix}"`);
+    if (app.iam_file) {
+      lines.push(`    iam_file: "${app.iam_file}"`);
+    }
     if (app.secrets && app.secrets.length > 0) {
       lines.push('    secrets:');
       for (const s of app.secrets) {
@@ -156,6 +160,7 @@ async function main() {
       .filter(Boolean) || [];
 
   const appPath = path.join('apps', appSlug);
+  const iamRelativePath = path.posix.join('apps', appSlug, 'iam.yaml');
   const absAppPath = path.join(repoRoot, appPath);
 
   // 1) Create app directory and files
@@ -173,10 +178,9 @@ async function main() {
       dev: 'ts-node-dev --respawn --transpile-only src/index.ts',
     },
     dependencies: {
-      express: '^4.21.2',
+      '@kod-psm/http-helpers': 'workspace:*',
     },
     devDependencies: {
-      '@types/express': '^4.17.21',
       '@types/node': '^20.0.0',
       'ts-node-dev': '^2.0.0',
       typescript: '^5.6.0',
@@ -216,21 +220,20 @@ async function main() {
   );
 
   const indexTs = `
-import express from 'express';
+import { createApp, listen } from '@kod-psm/http-helpers';
 
-const app = express();
-app.use(express.json());
+const PORT = Number(process.env.PORT) || 8080;
 
-const PORT = process.env.PORT || 8080;
-
-app.get('/', (_req, res) => {
-  res.json({
-    ok: true,
-    service: '${appSlug}',
+const app = createApp((router) => {
+  router.get('/', (_req, res) => {
+    res.json({
+      ok: true,
+      service: '${appSlug}',
+    });
   });
 });
 
-app.listen(PORT, () => {
+listen(app, PORT, () => {
   console.log('🚀 ${appName} (${appSlug}) running on port ' + PORT);
 });
 `.trimStart();
@@ -247,9 +250,11 @@ app.listen(PORT, () => {
   COPY libs ./libs
   COPY apps/${appSlug} ./apps/${appSlug}
 
-  # Use package-name filter (most reliable)
-  RUN pnpm install --frozen-lockfile --filter "${pkgName}..."
-  RUN pnpm -r --filter "${pkgName}..." run build
+  RUN pnpm install --frozen-lockfile --filter "@kod-psm/${appSlug}..."
+  RUN pnpm -r --filter "@kod-psm/${appSlug}..." run build
+
+  # produce self-contained output
+  RUN pnpm --filter "@kod-psm/${appSlug}" deploy --prod --legacy /out
 
   FROM node:22-slim AS runtime
   WORKDIR /app
@@ -257,15 +262,23 @@ app.listen(PORT, () => {
   ENV PORT=8080
   EXPOSE 8080
 
-  COPY --from=builder /repo/apps/${appSlug}/dist ./dist
-  COPY --from=builder /repo/apps/${appSlug}/package.json ./
-  COPY --from=builder /repo/node_modules ./node_modules
-  COPY --from=builder /repo/libs ./libs
+  # run the deployed bundle
+  COPY --from=builder /out ./
 
   CMD ["node", "dist/index.js"]
   `.trimStart();
 
   fs.writeFileSync(path.join(absAppPath, 'Dockerfile'), dockerfile, 'utf8');
+
+  const iamYaml = `
+serviceAccount: projects/PROJECT_ID/serviceAccounts/${appSlug}@PROJECT_ID.iam.gserviceaccount.com
+roles:
+  - roles/run.invoker
+
+resources: []
+`.trimStart();
+
+  fs.writeFileSync(path.join(absAppPath, 'iam.yaml'), iamYaml + '\n', 'utf8');
 
   // 2) Update infra/apps.yaml
   const appsYamlPath = path.join(repoRoot, 'infra', 'apps.yaml');
@@ -280,6 +293,7 @@ app.listen(PORT, () => {
     region,
     artifact_repo: artifactRepo,
     secret_prefix: secretPrefix,
+    iam_file: iamRelativePath,
     secrets,
   };
 
