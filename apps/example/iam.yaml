@@ -1,4 +1,4 @@
-serviceAccount: projects/PROJECT_ID/serviceAccounts/example@PROJECT_ID.iam.gserviceaccount.com
+serviceAccount: example-svc@PROJECT_ID.iam.gserviceaccount.com
 roles:
   - roles/run.invoker
   - roles/storage.objectViewer

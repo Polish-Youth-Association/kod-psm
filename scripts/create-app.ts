@@ -271,7 +271,7 @@ listen(app, PORT, () => {
   fs.writeFileSync(path.join(absAppPath, 'Dockerfile'), dockerfile, 'utf8');
 
   const iamYaml = `
-serviceAccount: projects/PROJECT_ID/serviceAccounts/${appSlug}@PROJECT_ID.iam.gserviceaccount.com
+serviceAccount: ${appSlug}-svc@PROJECT_ID.iam.gserviceaccount.com
 roles:
   - roles/run.invoker
 
