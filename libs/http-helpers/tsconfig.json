@@ -7,12 +7,10 @@
       "esModuleInterop": true,
       "forceConsistentCasingInFileNames": true,
       "skipLibCheck": true,
-      "baseUrl": ".",
-      "paths": {
-        "@kod-psm/*": ["packages/*/src", "services/*/src", "domains/*/src"]
-      }
+      "outDir": "dist",
+      "rootDir": "src",
+      "declaration": true
     },
-    "include": [],
+    "include": ["src"],
     "exclude": ["node_modules", "dist"]
   }
-  

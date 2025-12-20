@@ -90,13 +90,10 @@ importers:
 
   apps/example:
     dependencies:
-      express:
-        specifier: ^4.21.2
-        version: 4.21.2
+      '@kod-psm/http-helpers':
+        specifier: workspace:*
+        version: link:../../libs/http-helpers
     devDependencies:
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.25
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.25
@@ -170,6 +167,25 @@ importers:
       '@google-cloud/storage':
         specifier: ^7.13.0
         version: 7.18.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+
+  libs/http-helpers:
+    dependencies:
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
+      express:
+        specifier: ^4.21.2
+        version: 4.21.2
+      uuid:
+        specifier: ^9.0.0
+        version: 9.0.1
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
