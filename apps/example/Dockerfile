@@ -3,20 +3,15 @@ WORKDIR /repo
 
 RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
-# workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# copy only what we need for this build (preserves folder structure)
 COPY libs ./libs
 COPY apps/example ./apps/example
 
-# If you have shared root configs, copy them too (uncomment if they exist)
-# COPY tsconfig.base.json ./
-# COPY .npmrc ./
+RUN pnpm install --frozen-lockfile --filter "@kod-psm/example..."
+RUN pnpm -r --filter "@kod-psm/example..." run build
 
-RUN pnpm install --frozen-lockfile --filter ./apps/example...
-
-RUN pnpm -C apps/example run build
+# produce self-contained output
+RUN pnpm --filter "@kod-psm/example" deploy --prod --legacy /out
 
 FROM node:22-slim AS runtime
 WORKDIR /app
@@ -24,8 +19,7 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-COPY --from=builder /repo/apps/example/dist ./dist
-COPY --from=builder /repo/apps/example/package.json ./
-COPY --from=builder /repo/node_modules ./node_modules
+# run the deployed bundle
+COPY --from=builder /out ./
 
 CMD ["node", "dist/index.js"]
