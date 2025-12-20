@@ -5,6 +5,7 @@ apps:
     region: "us-central1"
     artifact_repo: "example"
     secret_prefix: "example"
+    iam_file: "apps/example/iam.yaml"
     secrets: []
   - id: member-onboarding
     name: "member-onboarding"
