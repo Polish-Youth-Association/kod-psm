@@ -126,15 +126,97 @@ jobs:
               echo "Secret $SECRET_NAME already exists."
             fi
 
-            # Get the current service account email
-            CURRENT_SERVICE_ACCOUNT=$(gcloud config get-value account)
-            
-            echo "Adding IAM policy binding for secret: $SECRET_NAME"
-            gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
-              --project="$PROJECT" \
-              --member="serviceAccount:$CURRENT_SERVICE_ACCOUNT" \
-              --role="roles/secretmanager.secretAccessor"
-            
+            IAM_FILE=$(node - <<'NODE' "$APP"
+const fs = require("fs");
+const path = require("path");
+function readAppsYaml(filePath) {
+  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+  const apps = [];
+  let current = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    if (line === "apps:") continue;
+    if (line.startsWith("- ")) {
+      if (current && current.id) apps.push(current);
+      current = {};
+      const rest = line.slice(2);
+      if (rest.includes(":")) {
+        const [k, ...v] = rest.split(":");
+        current[k.trim()] = v.join(":").trim().replace(/^"|"$/g, "");
+      }
+      continue;
+    }
+    if (!current) continue;
+    const [k, ...v] = line.split(":");
+    if (!k || v.length === 0) continue;
+    current[k.trim()] = v.join(":").trim().replace(/^"|"$/g, "");
+  }
+  if (current && current.id) apps.push(current);
+  return apps;
+}
+const appId = process.argv[2];
+const apps = readAppsYaml(path.join("infra", "apps.yaml"));
+const app = apps.find((a) => a.id === appId);
+if (app && app.iam_file) {
+  console.log(app.iam_file);
+}
+NODE
+)
+
+            SERVICE_ACCOUNT=""
+            if [ -n "$IAM_FILE" ] && [ -f "$IAM_FILE" ]; then
+              SERVICE_ACCOUNT=$(node - <<'NODE' "$IAM_FILE" "$PROJECT"
+const fs = require("fs");
+const manifest = fs.readFileSync(process.argv[2], "utf8");
+const projectId = process.argv[3];
+let serviceAccount = "";
+for (const raw of manifest.split(/\r?\n/)) {
+  const line = raw.trim();
+  if (!line || line.startsWith("#")) continue;
+  if (line.startsWith("serviceAccount:")) {
+    serviceAccount = line.split(":").slice(1).join(":").trim().replace(/PROJECT_ID/g, projectId);
+    break;
+  }
+}
+console.log(serviceAccount);
+NODE
+)
+            fi
+
+            if [ -n "$SERVICE_ACCOUNT" ]; then
+              echo "Ensuring service account $SERVICE_ACCOUNT exists"
+              if ! gcloud iam service-accounts describe "$SERVICE_ACCOUNT" --project="$PROJECT" > /dev/null 2>&1; then
+                ACCOUNT_ID=$(echo "$SERVICE_ACCOUNT" | cut -d@ -f1)
+                gcloud iam service-accounts create "$ACCOUNT_ID" \
+                  --project="$PROJECT" \
+                  --display-name="${APP} service account"
+              fi
+
+              echo "Ensuring Cloud Run service $APP uses $SERVICE_ACCOUNT"
+              if gcloud run services describe "$APP" --region="$REGION" --project="$PROJECT" > /dev/null 2>&1; then
+                CURRENT_SA=$(gcloud run services describe "$APP" --region="$REGION" --project="$PROJECT" --format="value(spec.template.spec.serviceAccountName)")
+                if [ -z "$CURRENT_SA" ] || [ "$CURRENT_SA" != "$SERVICE_ACCOUNT" ]; then
+                  gcloud run services update "$APP" \
+                    --region="$REGION" \
+                    --project="$PROJECT" \
+                    --service-account="$SERVICE_ACCOUNT"
+                else
+                  echo "$APP already uses $SERVICE_ACCOUNT"
+                fi
+              else
+                echo "Cloud Run service $APP not found yet; will set service account on first deploy."
+              fi
+
+              echo "Adding IAM policy binding for secret: $SECRET_NAME"
+              gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
+                --project="$PROJECT" \
+                --member="serviceAccount:$SERVICE_ACCOUNT" \
+                --role="roles/secretmanager.secretAccessor"
+            else
+              echo "No service account declared for $APP. Skipping secret binding."
+            fi
+
           done
 
           echo "✅ Infra check completed successfully."
