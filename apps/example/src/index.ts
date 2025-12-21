@@ -12,5 +12,5 @@ const app = createApp((router) => {
 });
 
 listen(app, PORT, () => {
-  console.log('🚀 example running on port ' + PORT);
+  console.log('🚀 example app running on port ' + PORT);
 });
