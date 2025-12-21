@@ -1,5 +1,4 @@
 import { createApp, listen } from '@kod-psm/http-helpers';
-import fetch from 'node-fetch';
 
 const PORT = Number(process.env.PORT) || 8080;
 const EXAMPLE_URL = process.env.EXAMPLE_URL ?? 'https://example-538357547406.us-central1.run.app';

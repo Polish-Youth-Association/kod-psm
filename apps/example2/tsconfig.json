@@ -8,6 +8,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
+    "lib": ["ES2020", "DOM"],
     "outDir": "dist",
     "rootDir": "src"
   },
