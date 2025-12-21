@@ -5,6 +5,6 @@ roles:
 
 resources:
   - type: storage.bucket
-    name: gs://example-artifacts
+    name: gs://example-bucket-iam
     roles:
       - roles/storage.objectViewer
