@@ -31,12 +31,12 @@ function prefixFromLocation(locationRaw: string): string {
 // Accept a flexible payload because Wix can send different shapes depending on how you wire it.
 // If you already know the exact field names coming from Wix, tighten this schema.
 const WixSignupSchema = z.object({
+  secret: z.string(),
   firstName: z.string().optional().default(''),
   lastName: z.string().optional().default(''),
   email: z.string().email(),
   phone: z.string().optional().default(''),
   location: z.string().optional().default(''),
-  // ideal if Wix gives you a stable id; otherwise we'll auto-id
   wixSubmissionId: z.string().optional().default(''),
 });
 
@@ -120,8 +120,7 @@ const app = createApp((router) => {
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
 
-            // keep original payload early on; you can drop later if you want
-            raw: req.body,
+            raw: rawWithoutSecret,
           },
           { merge: true }
         );
