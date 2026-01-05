@@ -53,14 +53,12 @@ const app = createApp((router) => {
   router.post('/wix/signup', async (req, res) => {
     try {
       // 1) auth
-      const secret =
-        (req.headers['x-wix-secret'] as string | undefined) ??
-        (req.headers['X-Wix-Secret'] as string | undefined) ??
-        '';
-
-      if (!WIX_WEBHOOK_SECRET || secret !== WIX_WEBHOOK_SECRET) {
+      const secretFromBody = typeof req.body?.secret === 'string' ? req.body.secret : '';
+      if (!WIX_WEBHOOK_SECRET || secretFromBody !== WIX_WEBHOOK_SECRET) {
         return res.status(401).json({ ok: false, error: 'unauthorized' });
       }
+      // remove secret so you don't store it accidentally
+      const { secret, ...rawWithoutSecret } = (req.body ?? {}) as Record<string, unknown>;
 
       // 2) validate
       const parsed = WixSignupSchema.safeParse(req.body);
