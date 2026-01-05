@@ -1,6 +1,7 @@
 import { createApp, listen } from '@kod-psm/http-helpers';
 import admin from 'firebase-admin';
 import { z } from 'zod';
+import { getFirestore } from 'firebase-admin/firestore';
 
 const PORT = Number(process.env.PORT) || 8080;
 
@@ -11,9 +12,7 @@ const WIX_WEBHOOK_SECRET = process.env.WIX_WEBHOOK_SECRET ?? '';
 if (!admin.apps.length) {
   admin.initializeApp();
 }
-const db = admin.firestore();
-
-// ---- Helpers ----
+const db = getFirestore(admin.app(), 'psm-member-platform');
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
