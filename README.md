@@ -12,30 +12,29 @@ Cloud Run + GitHub Actions power the deployment workflow, with automated review 
 ```text
 kod-psm/
 │
-├── domains/                               # Domain-driven backend services
-│   ├── memberships/                       # Organization Domain Name
-│   │   └── new-member-onboarding-app/     # Individual Cloud Run service
-│   │       ├── src/
-│   │       ├── package.json
-│   │       ├── tsconfig.json
-│   │       └── ...
-│   │
-│   └── ...                                    # More domain services later
+├── apps/                                  # Deployable applications/services
+│   ├── member-onboarding/                 # Example app (Cloud Run service)
+│   │   ├── src/
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── ...
+│   ├── certificate-generator/
+│   ├── persist-member/
+│   └── ...
 │
-├── services/                                  # Shared deployable backend services
-│   └── ...                                    # (ex: auth API, billing, gateways)
+├── libs/                                  # Shared libraries (reusable code)
+│   ├── http-helpers/                      # HTTP server helpers
+│   ├── gcp-helpers/                       # GCP helpers
+│   └── ...
 │
-├── packages/                                  # Shared libraries (reusable code)
-│   ├── eslint-config/                         # Shared linting rules
-│   ├── tsconfig/                              # Base tsconfig presets
-│   ├── utils/                                 # Shared helper functions
-│   └── ...                                    # Any shared blocks used across domains
+├── infra/                                 # Deployment/infra configs
+│   ├── apps.yaml
+│   └── cloudbuild.docker.yaml
 │
 ├── .github/
 │   └── workflows/                             # CI/CD pipelines
-│       ├── ci.yml
-│       ├── deploy-dev.yml
-│       └── deploy-prod.yml
+│       ├── deploy.yaml
+│       └── infra-check.yaml
 │
 ├── docs/                                      # Developer documentation
 │   └── *.md
@@ -47,11 +46,11 @@ kod-psm/
 
 ### 🔍 Key Concepts
 
-#### **Domains**
-Everything is organized by business domain.  
-Example: `domains/memberships/new-member-onboarding-app` is one self-contained service.
+#### **Apps**
+Everything is organized by deployable application under `apps/`.  
+Example: `apps/member-onboarding` is one self-contained Cloud Run service.
 
-Each service includes:
+Each app includes:
 - Its own `src/`
 - Its own build script
 - Independent Cloud Run deployment
