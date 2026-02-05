@@ -8,7 +8,6 @@ export default function Home() {
 
       <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <a href="/volunteer-onboarding">Volunteer onboarding</a>
-        <a href="/reimbursements">Reimbursements</a>
       </div>
 
       <p style={{ marginTop: 24, opacity: 0.6 }}>
