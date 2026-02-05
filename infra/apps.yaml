@@ -29,3 +29,11 @@ apps:
     secret_prefix: "example2"
     iam_file: "apps/example2/iam.yaml"
     secrets: []
+  - id: volunteer-onboarding
+    name: "volunteer-onboarding"
+    path: "apps/volunteer-onboarding"
+    region: "us-central1"
+    artifact_repo: "volunteer-onboarding"
+    secret_prefix: "volunteer-onboarding"
+    iam_file: "apps/volunteer-onboarding/iam.yaml"
+    secrets: []
