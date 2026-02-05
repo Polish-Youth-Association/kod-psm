@@ -37,3 +37,11 @@ apps:
     secret_prefix: "volunteer-onboarding"
     iam_file: "apps/volunteer-onboarding/iam.yaml"
     secrets: []
+  - id: psm-portal
+    name: "psm-portal"
+    path: "apps/psm-portal"
+    region: "us-central1"
+    artifact_repo: "psm-portal"
+    secret_prefix: "psm-portal"
+    iam_file: "apps/psm-portal/iam.yaml"
+    secrets: []
