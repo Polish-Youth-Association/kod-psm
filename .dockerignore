@@ -1,0 +1,27 @@
+# git
+.git
+**/.git
+**/.gitignore
+
+# node/pnpm
+**/node_modules
+**/.pnpm-store
+**/.turbo
+**/.next
+**/dist
+**/.cache
+
+# logs
+**/*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# tests / misc
+**/coverage
+**/.env
+**/.env.*
