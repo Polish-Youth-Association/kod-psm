@@ -6,11 +6,16 @@ export default function Home() {
   const [result, setResult] = useState<string>("");
 
   async function testExample() {
-    setResult("Calling example service...");
+    setResult("Calling /api/test-example...");
     try {
       const res = await fetch("/api/ping", { cache: "no-store" });
-      const json = await res.json();
-      setResult(JSON.stringify(json, null, 2));
+      const text = await res.text();
+  
+      try {
+        setResult(JSON.stringify(JSON.parse(text), null, 2));
+      } catch {
+        setResult(`Non-JSON response (status ${res.status}):\n\n${text.slice(0, 800)}`);
+      }
     } catch (e: any) {
       setResult(`Error: ${e?.message ?? String(e)}`);
     }
