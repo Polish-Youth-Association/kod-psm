@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { GoogleAuth } from "google-auth-library";
 
 export async function GET() {
   const base = process.env.API_BASE;
+  const auth = new GoogleAuth();
+  const client = await auth.getIdTokenClient(base); // audience = service URL
+  const headers = await client.getRequestHeaders();
   if (!base) {
     return NextResponse.json(
       { ok: false, error: "API_BASE is not set" },
