@@ -92,7 +92,7 @@ export function OnboardingPage({
   }
 
   return (
-    <main style={{ padding: 24 }}>
+    <main style={{ padding: 24, margin: "0 auto" }}>
       <h1 style={{ fontSize: 26, margin: 0 }}>{title}</h1>
       <p style={{ marginTop: 6, opacity: 0.7 }}>
         Create an onboarding request and track status.
