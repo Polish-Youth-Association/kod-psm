@@ -1,6 +1,6 @@
 export default function Home() {
   return (
-    <main style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+    <main>
       <h1 style={{ fontSize: 28, marginBottom: 8 }}>PSM Portal</h1>
       <p style={{ marginTop: 0, opacity: 0.8 }}>
         Internal tools for Polish Youth Association.
