@@ -84,7 +84,7 @@ export default function VolunteerOnboardingPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+    <main >
       <header style={{ marginBottom: 16 }}>
         <h1 style={{ fontSize: 26, margin: 0 }}>Volunteer Onboarding</h1>
         <p style={{ marginTop: 6, opacity: 0.7, maxWidth: 820 }}>
