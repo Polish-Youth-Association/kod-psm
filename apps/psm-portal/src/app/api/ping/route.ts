@@ -3,9 +3,7 @@ import { GoogleAuth } from "google-auth-library";
 
 export async function GET() {
   const base = process.env.API_BASE;
-  const auth = new GoogleAuth();
-  const client = await auth.getIdTokenClient(base); // audience = service URL
-  const headers = await client.getRequestHeaders();
+
   if (!base) {
     return NextResponse.json(
       { ok: false, error: "API_BASE is not set" },
@@ -16,7 +14,15 @@ export async function GET() {
   const url = `${base.replace(/\/$/, "")}/`;
 
   try {
-    const resp = await fetch(url, { cache: "no-store" });
+    const auth = new GoogleAuth();
+    const client = await auth.getIdTokenClient(base);
+    const headers = await client.getRequestHeaders();
+
+    const resp = await fetch(url, {
+      headers,
+      cache: "no-store"
+    });
+
     const text = await resp.text();
 
     let body: unknown = text;
