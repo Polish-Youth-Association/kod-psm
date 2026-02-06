@@ -16,11 +16,13 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-# Copy standalone server bundle (contains server.js + minimal node_modules)
+# Standalone output (includes apps/psm-portal/server.js + minimal node_modules)
 COPY --from=builder /repo/apps/psm-portal/.next/standalone ./
 
-# Copy static assets and public
-COPY --from=builder /repo/apps/psm-portal/.next/static ./.next/static
-COPY --from=builder /repo/apps/psm-portal/public ./public
+# Static assets MUST be under apps/psm-portal/.next/static
+COPY --from=builder /repo/apps/psm-portal/.next/static ./apps/psm-portal/.next/static
+
+# Public assets MUST be under apps/psm-portal/public
+COPY --from=builder /repo/apps/psm-portal/public ./apps/psm-portal/public
 
 CMD ["node", "apps/psm-portal/server.js"]
