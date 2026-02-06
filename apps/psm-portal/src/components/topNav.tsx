@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/", label: "Home" },
   { href: "/volunteer-onboarding", label: "Volunteer Onboarding" }
-  // later: { href: "/member-onboarding", label: "Member Onboarding" }
 ];
 
 export function TopNav() {
@@ -24,15 +23,18 @@ export function TopNav() {
     >
       <nav
         style={{
+          height: 56,
           maxWidth: "100%",
-          margin: 0,
-          padding: "12px 16px",
+          padding: "0 16px",
           display: "flex",
-          alignItems: "left",
+          alignItems: "center",
           gap: 16
         }}
       >
-        <div style={{ fontWeight: 650 }}>PSM Portal</div>
+        <div style={{ 
+            fontWeight: 650,
+            lineHeight: "20px" 
+        }}>PSM Portal</div>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {links.map((l) => {
@@ -42,13 +44,19 @@ export function TopNav() {
                 key={l.href}
                 href={l.href}
                 style={{
-                  textDecoration: "none",
-                  padding: "6px 10px",
-                  borderRadius: 10,
-                  border: active ? "1px solid rgba(0,0,0,0.25)" : "1px solid transparent",
-                  background: active ? "rgba(0,0,0,0.04)" : "transparent",
-                  color: "inherit"
-                }}
+                    display: "inline-flex",
+                    alignItems: "center",
+                    height: 36,
+                    padding: "0 12px",
+                    borderRadius: 12,
+                    border: active
+                      ? "1px solid rgba(0,0,0,0.30)"
+                      : "1px solid transparent",
+                    background: active ? "rgba(0,0,0,0.04)" : "transparent",
+                    color: "inherit",
+                    textDecoration: "none",
+                    lineHeight: "20px"
+                  }}
               >
                 {l.label}
               </Link>
