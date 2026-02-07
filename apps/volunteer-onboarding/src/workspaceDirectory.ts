@@ -3,19 +3,11 @@ import { IAMCredentialsClient } from "@google-cloud/iam-credentials";
 
 const SCOPES = ["https://www.googleapis.com/auth/admin.directory.user"];
 
-function b64url(s: string) {
-  return Buffer.from(s)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
-}
-
-async function signJwt(unsignedJwt: string, serviceAccountEmail: string) {
+async function signClaims(claims: object, serviceAccountEmail: string) {
   const iam = new IAMCredentialsClient();
   const [resp] = await iam.signJwt({
     name: `projects/-/serviceAccounts/${serviceAccountEmail}`,
-    payload: unsignedJwt
+    payload: JSON.stringify(claims), // ✅ raw JSON claims, NOT base64
   });
   if (!resp.signedJwt) throw new Error("signJwt: empty signedJwt");
   return resp.signedJwt;
@@ -24,13 +16,13 @@ async function signJwt(unsignedJwt: string, serviceAccountEmail: string) {
 async function exchangeJwtForAccessToken(assertion: string) {
   const form = new URLSearchParams({
     grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-    assertion
+    assertion,
   });
 
   const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: form
+    body: form,
   });
 
   const json: any = await resp.json();
@@ -49,19 +41,18 @@ export async function getDirectoryClient() {
   const iat = Math.floor(Date.now() / 1000);
   const exp = iat + 3600;
 
-  const header = { alg: "RS256", typ: "JWT" };
-  const payload = {
+  // ✅ these are the JWT *claims*
+  const claims = {
     iss: serviceAccountEmail,
     sub: subject,
     scope: SCOPES.join(" "),
     aud: "https://oauth2.googleapis.com/token",
     iat,
-    exp
+    exp,
   };
 
-  const unsigned = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
-  const signed = await signJwt(unsigned, serviceAccountEmail);
-  const accessToken = await exchangeJwtForAccessToken(signed);
+  const signedJwt = await signClaims(claims, serviceAccountEmail);
+  const accessToken = await exchangeJwtForAccessToken(signedJwt);
 
   const auth = new google.auth.OAuth2();
   auth.setCredentials({ access_token: accessToken });
