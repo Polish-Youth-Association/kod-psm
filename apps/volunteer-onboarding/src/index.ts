@@ -1,6 +1,8 @@
 import { createApp, listen } from "@kod-psm/http-helpers";
 import crypto from "node:crypto";
 import { getDirectoryClient } from "./workspaceDirectory";
+import { sendOnboardingEmail } from "./gmail";
+import { ONBOARDING_TEMPLATE_HTML } from "./onboardingTemplate";
 
 const PORT = Number(process.env.PORT) || 8080;
 
@@ -89,17 +91,41 @@ const app = createApp((router) => {
         }
       });
 
-      // NOTE: don't return tempPassword long-term. Useful for first test.
+      const createdEmail = created.data.primaryEmail || primaryEmail;
+
+      // Send onboarding email to personal email
+      let emailStatus: "Sent" | "Failed" = "Sent";
+      let emailError: string | undefined;
+
+      try {
+        await sendOnboardingEmail({
+          toPersonalEmail: String(body.personalEmail).trim(),
+          firstName: String(body.firstName).trim(),
+          team: String(body.team).trim(),
+          polishYouthEmail: createdEmail,
+          tempPassword,
+          htmlTemplate: ONBOARDING_TEMPLATE_HTML
+        });
+      } catch (e: any) {
+        emailStatus = "Failed";
+        emailError = e?.message ?? String(e);
+        // Don't log the password or full HTML
+        console.error("onboarding email failed", { requestId, emailStatus, emailError });
+      }
+
+      // ✅ Do NOT return tempPassword long-term
       return res.status(200).json({
         ok: true,
         requestId,
         status: "Provisioned",
         user: {
           id: created.data.id,
-          primaryEmail: created.data.primaryEmail
+          primaryEmail: createdEmail
         },
-        // REMOVE after testing:
-        tempPassword
+        email: {
+          status: emailStatus,
+          error: emailError
+        }
       });
     } catch (err: any) {
       const msg = err?.message ?? String(err);
