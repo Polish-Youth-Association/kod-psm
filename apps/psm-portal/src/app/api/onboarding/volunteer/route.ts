@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { GoogleAuth } from "google-auth-library";
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const base = process.env.VOLUNTEER_ONBOARDING_BASE;
@@ -25,6 +23,10 @@ export async function POST(req: Request) {
       const client = await auth.getIdTokenClient(base.trim());
       const authHeaders = await client.getRequestHeaders();
       Object.assign(headers, authHeaders);
+      console.log("headers", headers);
+      const a = (headers.Authorization ?? (headers as any).authorization) as string | undefined;
+      if (a) headers.authorization = a;
+      delete (headers as any).Authorization;
 
     const upstream = await fetch(url, {
       method: "POST",
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
     console.log("proxy config", {
         base,
         url,
-        hasAuthHeader: Boolean(headers.authorization || (headers as any).Authorization),
+        authHeader: headers.authorization,
       });
 ///////////
     return NextResponse.json(
