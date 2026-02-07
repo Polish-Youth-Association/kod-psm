@@ -37,6 +37,13 @@ export async function POST(req: Request) {
       body = JSON.parse(text);
     } catch {}
 
+    /// RM after debugging
+    console.log("proxy config", {
+        base,
+        url,
+        hasAuthHeader: Boolean(headers.authorization || (headers as any).Authorization),
+      });
+///////////
     return NextResponse.json(
       { ok: upstream.ok, upstream: { url, status: upstream.status }, body },
       { status: upstream.ok ? 200 : upstream.status }
