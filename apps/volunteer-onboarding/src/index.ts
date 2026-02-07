@@ -1,7 +1,6 @@
 import { createApp, listen } from "@kod-psm/http-helpers";
-import { google } from "googleapis";
-import { GoogleAuth } from "google-auth-library";
 import crypto from "node:crypto";
+import { getDirectoryClient } from "./workspaceDirectory";
 
 const PORT = Number(process.env.PORT) || 8080;
 
@@ -40,23 +39,6 @@ function generateTempPassword() {
   return `${prefix}${crypto.randomBytes(12).toString("base64url")}A1`;
 }
 
-async function getDirectoryClient() {
-  const subject = process.env.WORKSPACE_IMPERSONATE_ADMIN?.trim();
-  if (!subject) throw new Error("WORKSPACE_IMPERSONATE_ADMIN is not set");
-
-  // DWD: use service account + subject impersonation
-  const auth = new GoogleAuth({
-    scopes: ["https://www.googleapis.com/auth/admin.directory.user"],
-    clientOptions: { subject }
-  });
-
-  const directory = google.admin({
-    version: "directory_v1",
-    auth
-  });
-
-  return directory;
-}
 
 const app = createApp((router) => {
   router.get("/", (_req, res) => {
