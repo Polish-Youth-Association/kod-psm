@@ -10,7 +10,10 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
   "dependencies": {
-    "@kod-psm/http-helpers": "workspace:*"
+    "@google-cloud/iam-credentials": "^4.2.1",
+    "@kod-psm/http-helpers": "workspace:*",
+    "google-auth-library": "^10.5.0",
+    "googleapis": "^171.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
