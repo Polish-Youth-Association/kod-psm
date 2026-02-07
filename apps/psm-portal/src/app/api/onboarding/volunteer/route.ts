@@ -16,16 +16,13 @@ export async function POST(req: Request) {
 
   try {
     const headers: Record<string, string> = {
-      "content-type": "application/json"
-    };
-
-    // ✅ IAM only for Cloud Run HTTPS URLs
-    if (base.startsWith("https://")) {
+        "content-type": "application/json"
+      };
+      
       const auth = new GoogleAuth();
-      const client = await auth.getIdTokenClient(base); // audience = service base URL
+      const client = await auth.getIdTokenClient(base.trim());
       const authHeaders = await client.getRequestHeaders();
       Object.assign(headers, authHeaders);
-    }
 
     const upstream = await fetch(url, {
       method: "POST",
