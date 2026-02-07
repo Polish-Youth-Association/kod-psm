@@ -12,27 +12,35 @@ export async function POST(req: Request) {
   }
 
   const payload = await req.json();
+  if (!base) {
+    return NextResponse.json({ ok: false, error: "VOLUNTEER_ONBOARDING_BASE is not set" }, { status: 500 });
+  }
+  
   const url = `${base.replace(/\/$/, "")}/v1/onboarding/volunteers`;
-
-  try {
-    const headers: Record<string, string> = {
-        "content-type": "application/json"
-      };
-      
-      const auth = new GoogleAuth();
-      const client = await auth.getIdTokenClient(base.trim());
-      const authHeaders = await client.getRequestHeaders();
-      console.log("Auth headers", authHeaders);
-      Object.assign(headers, authHeaders);
-      console.log("headers", headers);
-
-    const upstream = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-      cache: "no-store"
-    });
-
+  
+  const auth = new GoogleAuth();
+  const client = await auth.getIdTokenClient(base);
+  const authHeaders = await client.getRequestHeaders(); // Headers
+  
+  const token = authHeaders.get("authorization");
+  if (!token) {
+    return NextResponse.json(
+      { ok: false, error: "Failed to mint ID token (no authorization header)" },
+      { status: 500 }
+    );
+  }
+  
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    authorization: token
+  };
+  
+  const upstream = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+    cache: "no-store"
+  });
     const text = await upstream.text();
     let body: unknown = text;
     try {
