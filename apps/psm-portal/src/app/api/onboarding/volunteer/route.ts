@@ -22,11 +22,9 @@ export async function POST(req: Request) {
       const auth = new GoogleAuth();
       const client = await auth.getIdTokenClient(base.trim());
       const authHeaders = await client.getRequestHeaders();
+      console.log("Auth headers", authHeaders);
       Object.assign(headers, authHeaders);
       console.log("headers", headers);
-      const a = (headers.Authorization ?? (headers as any).authorization) as string | undefined;
-      if (a) headers.authorization = a;
-      delete (headers as any).Authorization;
 
     const upstream = await fetch(url, {
       method: "POST",
