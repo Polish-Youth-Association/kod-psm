@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 type VolunteerOnboardingRequest = {
   id: string;
@@ -9,13 +9,32 @@ type VolunteerOnboardingRequest = {
   lastName: string;
   personalEmail: string;
   team: string;
-  startDate: string;
+  startDate: string; // YYYY-MM-DD or ""
   notes: string;
+  suggestedPrimaryEmail: string;
   status: "Draft" | "Submitted" | "Approved" | "Provisioning" | "Completed" | "Rejected";
 };
 
 function newId() {
   return `req_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function isEmail(s: string) {
+  // good-enough validation for UI
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
+}
+
+function toEmailLocalPart(first: string, last: string) {
+  const base = `${first}.${last}`
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents
+    .replace(/[^a-z0-9.]/g, "") // keep a-z 0-9 .
+    .replace(/\.+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+
+  return base || "";
 }
 
 export default function VolunteerOnboardingPage() {
@@ -32,12 +51,16 @@ export default function VolunteerOnboardingPage() {
   const [requests, setRequests] = useState<VolunteerOnboardingRequest[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  const suggestedPrimaryEmail = useMemo(() => {
+    const local = toEmailLocalPart(form.firstName, form.lastName);
+    return local ? `${local}@polishyouth.org` : "";
+  }, [form.firstName, form.lastName]);
+
   const canSubmit = useMemo(() => {
-    const emailOk = form.personalEmail.trim().includes("@");
     return (
       form.firstName.trim().length > 0 &&
       form.lastName.trim().length > 0 &&
-      emailOk &&
+      isEmail(form.personalEmail) &&
       form.team.trim().length > 0
     );
   }, [form]);
@@ -45,29 +68,58 @@ export default function VolunteerOnboardingPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+  
     if (!canSubmit) {
       setError("Fill in required fields: first name, last name, personal email, team.");
       return;
     }
-
+  
     setSubmitting(true);
     try {
-      // UI-only for now: just append locally.
-      // Later: POST to /api/onboarding/requests (portal route) → onboarding backend.
-      const record: VolunteerOnboardingRequest = {
-        id: newId(),
-        createdAt: new Date().toISOString(),
+      const payload = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         personalEmail: form.personalEmail.trim(),
         team: form.team.trim(),
         startDate: form.startDate.trim(),
         notes: form.notes.trim(),
+        suggestedPrimaryEmail
+      };
+  
+      const resp = await fetch("/api/onboarding/volunteer", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+  
+      const text = await resp.text();
+      let json: any = null;
+      try {
+        json = JSON.parse(text);
+      } catch {}
+      
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error ?? `Non-JSON or failed response (HTTP ${resp.status}): ${text.slice(0, 200)}`);
+      }
+  
+      const result = json.body;
+      if (!result?.ok) throw new Error(result?.error ?? "Backend rejected request");
+      
+      const record: VolunteerOnboardingRequest = {
+        id: result.requestId,
+        createdAt: new Date().toISOString(),
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        personalEmail: payload.personalEmail,
+        team: payload.team,
+        startDate: payload.startDate,
+        notes: payload.notes,
+        suggestedPrimaryEmail: payload.suggestedPrimaryEmail,
         status: "Submitted"
       };
-
+  
       setRequests((prev) => [record, ...prev]);
-
+  
       setForm({
         firstName: "",
         lastName: "",
@@ -88,9 +140,9 @@ export default function VolunteerOnboardingPage() {
       <header style={{ marginBottom: 16 }}>
         <h1 style={{ fontSize: 26, margin: 0 }}>Volunteer Onboarding</h1>
         <p style={{ marginTop: 6, opacity: 0.7, maxWidth: 820 }}>
-          Create a request to onboard a new volunteer. This will eventually automate:
-          Google Workspace account creation (<code>@polishyouth.org</code>), group access,
-          and Slack provisioning.
+          Create a request to onboard a new volunteer. This will eventually automate: Google
+          Workspace account creation (<code>@polishyouth.org</code>), group access, and Slack
+          provisioning.
         </p>
       </header>
 
@@ -110,11 +162,13 @@ export default function VolunteerOnboardingPage() {
               label="First name *"
               value={form.firstName}
               onChange={(v) => setForm((f) => ({ ...f, firstName: v }))}
+              autoComplete="given-name"
             />
             <Field
               label="Last name *"
               value={form.lastName}
               onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
+              autoComplete="family-name"
             />
           </div>
 
@@ -124,6 +178,8 @@ export default function VolunteerOnboardingPage() {
               value={form.personalEmail}
               onChange={(v) => setForm((f) => ({ ...f, personalEmail: v }))}
               placeholder="name@gmail.com"
+              type="email"
+              autoComplete="email"
             />
             <Field
               label="Team *"
@@ -138,15 +194,47 @@ export default function VolunteerOnboardingPage() {
               label="Start date (optional)"
               value={form.startDate}
               onChange={(v) => setForm((f) => ({ ...f, startDate: v }))}
-              placeholder="YYYY-MM-DD"
+              type="date"
             />
-            <Field
-              label="Notes (optional)"
-              value={form.notes}
-              onChange={(v) => setForm((f) => ({ ...f, notes: v }))}
-              placeholder="Anything the admin should know..."
-            />
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 12, opacity: 0.75 }}>Suggested PSM email</span>
+              <div
+                style={{
+                  height: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 10px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.12)",
+                  background: "rgba(0,0,0,0.02)",
+                  fontSize: 13,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}
+                title={suggestedPrimaryEmail || ""}
+              >
+                {suggestedPrimaryEmail || "—"}
+              </div>
+            </label>
           </div>
+
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontSize: 12, opacity: 0.75 }}>Notes (optional)</span>
+            <textarea
+              value={form.notes}
+              placeholder="Anything the admin should know..."
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              rows={4}
+              style={{
+                padding: 10,
+                borderRadius: 10,
+                border: "1px solid rgba(0,0,0,0.2)",
+                resize: "vertical"
+              }}
+            />
+          </label>
 
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <button
@@ -164,15 +252,11 @@ export default function VolunteerOnboardingPage() {
               {submitting ? "Submitting..." : "Submit request"}
             </button>
 
-            <span style={{ fontSize: 12, opacity: 0.7 }}>
-              * required
-            </span>
+            <span style={{ fontSize: 12, opacity: 0.7 }}>* required</span>
           </div>
 
           {error ? (
-            <p style={{ margin: 0, color: "crimson", whiteSpace: "pre-wrap" }}>
-              {error}
-            </p>
+            <p style={{ margin: 0, color: "crimson", whiteSpace: "pre-wrap" }}>{error}</p>
           ) : null}
         </form>
       </section>
@@ -181,31 +265,38 @@ export default function VolunteerOnboardingPage() {
         <h2 style={{ fontSize: 16, margin: 0 }}>Recent requests</h2>
 
         <div style={{ marginTop: 10, overflowX: "auto" }}>
-          <table style={{ borderCollapse: "collapse", minWidth: 980 }}>
+          <table style={{ borderCollapse: "collapse", minWidth: 1120 }}>
             <thead>
               <tr>
-                {["Created", "Request ID", "Name", "Personal Email", "Team", "Start Date", "Status"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      style={{
-                        textAlign: "left",
-                        fontSize: 12,
-                        padding: "8px 10px",
-                        borderBottom: "1px solid rgba(0,0,0,0.15)",
-                        opacity: 0.7
-                      }}
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
+                {[
+                  "Created",
+                  "Request ID",
+                  "Name",
+                  "Personal Email",
+                  "Team",
+                  "Start Date",
+                  "Suggested PSM Email",
+                  "Status"
+                ].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      textAlign: "left",
+                      fontSize: 12,
+                      padding: "8px 10px",
+                      borderBottom: "1px solid rgba(0,0,0,0.15)",
+                      opacity: 0.7
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {requests.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: 12, opacity: 0.7 }}>
+                  <td colSpan={8} style={{ padding: 12, opacity: 0.7 }}>
                     No requests yet.
                   </td>
                 </tr>
@@ -220,6 +311,7 @@ export default function VolunteerOnboardingPage() {
                     <td style={cellStyle}>{r.personalEmail}</td>
                     <td style={cellStyle}>{r.team}</td>
                     <td style={cellStyle}>{r.startDate || ""}</td>
+                    <td style={cellStyle}>{r.suggestedPrimaryEmail}</td>
                     <td style={cellStyle}>{r.status}</td>
                   </tr>
                 ))
@@ -240,12 +332,16 @@ function Field({
   label,
   value,
   onChange,
-  placeholder
+  placeholder,
+  type,
+  autoComplete
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  type?: React.HTMLInputTypeAttribute;
+  autoComplete?: string;
 }) {
   return (
     <label style={{ display: "grid", gap: 6 }}>
@@ -253,6 +349,8 @@ function Field({
       <input
         value={value}
         placeholder={placeholder}
+        type={type ?? "text"}
+        autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
         style={{
           height: 36,
