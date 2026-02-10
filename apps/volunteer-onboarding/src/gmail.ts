@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import { getDelegatedAccessToken } from "./workspaceAuth";
 
 const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
+const CC_EMAIL = "onboarding@polishyouth.org";
 
 function base64url(input: string) {
   return Buffer.from(input)
@@ -23,6 +24,7 @@ export async function sendOnboardingEmail(args: {
   tempPassword: string;
   htmlTemplate: string;
   subject?: string;
+  cc?: string | string[];
 }) {
   const from = process.env.ONBOARDING_FROM_EMAIL?.trim();
   if (!from) throw new Error("ONBOARDING_FROM_EMAIL is not set");
@@ -35,7 +37,7 @@ export async function sendOnboardingEmail(args: {
   const gmail = google.gmail({ version: "v1", auth });
 
   const subject =
-    args.subject?.trim() || `Welcome to Polish Youth Association — ${args.team}`;
+    args.subject?.trim() || `Welcome to the Polish Youth Association <${args.team}> Team`;
 
   const html = renderTemplate(args.htmlTemplate, {
     FIRST_NAME: args.firstName,
@@ -48,6 +50,7 @@ export async function sendOnboardingEmail(args: {
   const raw = [
     `From: "Polish Youth Association" <${from}>`,
     `To: ${args.toPersonalEmail}`,
+    `Cc: ${CC_EMAIL}`,
     `Subject: ${subject}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/html; charset="UTF-8"`,

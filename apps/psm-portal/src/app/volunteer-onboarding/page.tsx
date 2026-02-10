@@ -319,10 +319,6 @@ export default function VolunteerOnboardingPage() {
             </tbody>
           </table>
         </div>
-
-        <p style={{ marginTop: 10, opacity: 0.6 }}>
-          Dev note: this page is UI-only for now; requests are not persisted yet.
-        </p>
       </section>
     </main>
   );
