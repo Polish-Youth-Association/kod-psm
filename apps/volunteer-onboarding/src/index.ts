@@ -2,9 +2,9 @@ import { createApp, listen } from "@kod-psm/http-helpers";
 import crypto from "node:crypto";
 import { getDirectoryClient } from "./workspaceDirectory";
 import { sendOnboardingEmail } from "./gmail";
-import { sendVolunteerAgreementEnvelope } from "./docusign";
 import { ONBOARDING_TEMPLATE_HTML } from "./onboardingTemplate";
 import { ONBOARDING_TEMPLATE_PSM_HTML } from "./onboardingTemplatePsmInbox";
+import { triggerSlackDocusignWorkflow } from "./slack";
 
 const PORT = Number(process.env.PORT) || 8080;
 
@@ -17,6 +17,10 @@ type VolunteerOnboardingPayload = {
   notes?: string;
   suggestedPrimaryEmail?: string;
 };
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
 
 function newId() {
   return `req_${Math.random().toString(36).slice(2, 10)}`;
@@ -108,17 +112,23 @@ const app = createApp((router) => {
           team: String(body.team).trim(),
           polishYouthEmail: createdEmail,
           tempPassword,
+          slackInviteLink,
           htmlTemplate: ONBOARDING_TEMPLATE_HTML
         });
+        
+        await sleep(60_000);
+
         await sendOnboardingEmail({
-          toPersonalEmail: createdEmail,           // reuse the same function arg name (or rename)
+          toPersonalEmail: createdEmail,
           firstName: String(body.firstName).trim(),
           team: String(body.team).trim(),
           polishYouthEmail: createdEmail,
-          tempPassword: "",                        // or omit if you change function signature
-          htmlTemplate: ONBOARDING_TEMPLATE_PSM_HTML,
+          tempPassword: "—",
           slackInviteLink,
+          htmlTemplate: ONBOARDING_TEMPLATE_PSM_HTML
         });
+
+        
       } catch (e: any) {
         emailStatus = "Failed";
         emailError = e?.message ?? String(e);
@@ -126,28 +136,18 @@ const app = createApp((router) => {
         console.error("onboarding email failed", { requestId, emailStatus, emailError });
       }
 
-      let docusignStatus: "Sent" | "Skipped" | "Failed" = "Skipped";
-      let docusignEnvelopeId: string | undefined;
+      let docusignStatus: "Sent" | "Failed" = "Sent";
       let docusignError: string | undefined;
 
-      const templateId = process.env.DS_TEMPLATE_VOLUNTEER_AGREEMENT?.trim();
+      try {
+        const email = String(body.personalEmail).trim();
+        const name = `${String(body.firstName).trim()} ${String(body.lastName).trim()}`.trim();
 
-      if (templateId) {
-        try {
-          const signerName = `${String(body.firstName).trim()} ${String(body.lastName).trim()}`.trim();
-          const out = await sendVolunteerAgreementEnvelope({
-            signerEmail: String(body.personalEmail).trim(), // or createdEmail if you prefer
-            signerName,
-            templateId,
-          });
-
-          docusignStatus = "Sent";
-          docusignEnvelopeId = out.envelopeId;
-        } catch (e: any) {
-          docusignStatus = "Failed";
-          docusignError = e?.message ?? String(e);
-          console.error("docusign send failed", { requestId, docusignError });
-        }
+        await triggerSlackDocusignWorkflow(email, name);
+      } catch (e: any) {
+        docusignStatus = "Failed";
+        docusignError = e?.message ?? String(e);
+        console.error("slack workflow trigger failed", { requestId, docusignError });
       }
 
       return res.status(200).json({
@@ -164,7 +164,6 @@ const app = createApp((router) => {
         },
         docusign: {
           status: docusignStatus,
-          envelopeId: docusignEnvelopeId,
           error: docusignError
         }
       });
