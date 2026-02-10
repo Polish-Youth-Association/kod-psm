@@ -25,6 +25,7 @@ export async function sendOnboardingEmail(args: {
   htmlTemplate: string;
   subject?: string;
   cc?: string | string[];
+  slackInviteLink?: string;
 }) {
   const from = process.env.ONBOARDING_FROM_EMAIL?.trim();
   if (!from) throw new Error("ONBOARDING_FROM_EMAIL is not set");
