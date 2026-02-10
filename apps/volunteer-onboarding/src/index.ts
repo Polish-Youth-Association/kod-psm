@@ -2,7 +2,9 @@ import { createApp, listen } from "@kod-psm/http-helpers";
 import crypto from "node:crypto";
 import { getDirectoryClient } from "./workspaceDirectory";
 import { sendOnboardingEmail } from "./gmail";
+import { sendVolunteerAgreementEnvelope } from "./docusign";
 import { ONBOARDING_TEMPLATE_HTML } from "./onboardingTemplate";
+import { ONBOARDING_TEMPLATE_PSM_HTML } from "./onboardingTemplatePsmInbox";
 
 const PORT = Number(process.env.PORT) || 8080;
 
@@ -98,6 +100,8 @@ const app = createApp((router) => {
       let emailError: string | undefined;
 
       try {
+        const slackInviteLink = process.env.SLACK_INVITE_LINK?.trim() || "";
+
         await sendOnboardingEmail({
           toPersonalEmail: String(body.personalEmail).trim(),
           firstName: String(body.firstName).trim(),
@@ -106,6 +110,15 @@ const app = createApp((router) => {
           tempPassword,
           htmlTemplate: ONBOARDING_TEMPLATE_HTML
         });
+        await sendOnboardingEmail({
+          toPersonalEmail: createdEmail,           // reuse the same function arg name (or rename)
+          firstName: String(body.firstName).trim(),
+          team: String(body.team).trim(),
+          polishYouthEmail: createdEmail,
+          tempPassword: "",                        // or omit if you change function signature
+          htmlTemplate: ONBOARDING_TEMPLATE_PSM_HTML,
+          slackInviteLink,
+        });
       } catch (e: any) {
         emailStatus = "Failed";
         emailError = e?.message ?? String(e);
@@ -113,7 +126,30 @@ const app = createApp((router) => {
         console.error("onboarding email failed", { requestId, emailStatus, emailError });
       }
 
-      // ✅ Do NOT return tempPassword long-term
+      let docusignStatus: "Sent" | "Skipped" | "Failed" = "Skipped";
+      let docusignEnvelopeId: string | undefined;
+      let docusignError: string | undefined;
+
+      const templateId = process.env.DS_TEMPLATE_VOLUNTEER_AGREEMENT?.trim();
+
+      if (templateId) {
+        try {
+          const signerName = `${String(body.firstName).trim()} ${String(body.lastName).trim()}`.trim();
+          const out = await sendVolunteerAgreementEnvelope({
+            signerEmail: String(body.personalEmail).trim(), // or createdEmail if you prefer
+            signerName,
+            templateId,
+          });
+
+          docusignStatus = "Sent";
+          docusignEnvelopeId = out.envelopeId;
+        } catch (e: any) {
+          docusignStatus = "Failed";
+          docusignError = e?.message ?? String(e);
+          console.error("docusign send failed", { requestId, docusignError });
+        }
+      }
+
       return res.status(200).json({
         ok: true,
         requestId,
@@ -125,6 +161,11 @@ const app = createApp((router) => {
         email: {
           status: emailStatus,
           error: emailError
+        },
+        docusign: {
+          status: docusignStatus,
+          envelopeId: docusignEnvelopeId,
+          error: docusignError
         }
       });
     } catch (err: any) {
