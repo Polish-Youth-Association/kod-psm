@@ -18,6 +18,10 @@ type VolunteerOnboardingPayload = {
   suggestedPrimaryEmail?: string;
 };
 
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
 function newId() {
   return `req_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -112,6 +116,8 @@ const app = createApp((router) => {
           htmlTemplate: ONBOARDING_TEMPLATE_HTML
         });
         
+        await sleep(10_000);
+
         await sendOnboardingEmail({
           toPersonalEmail: createdEmail,
           firstName: String(body.firstName).trim(),
