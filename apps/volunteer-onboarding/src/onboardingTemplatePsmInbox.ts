@@ -9,7 +9,7 @@ export const ONBOARDING_TEMPLATE_PSM_HTML = `
   </ul>
 
   <p>Slack: join using this link (use your PSM email):<br/></p>
-    <a href="{{SLACK_INVITE_LINK}}">{{SLACK_INVITE_LINK}}</a>
+    <a href="https://join.slack.com/t/polishyouth/shared_invite/zt-3puh4ox9g-HL3lsHIiTCNg7UjOgebCkA">SLACK INVITE LINK</a>
 
   <p>Next steps: please send your bio/headshot/resume and schedule an onboarding meeting.</p>
 
