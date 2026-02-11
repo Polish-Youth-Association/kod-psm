@@ -44,7 +44,9 @@ export default function VolunteerOnboardingPage() {
     personalEmail: "",
     team: "",
     startDate: "",
-    notes: ""
+    notes: "",
+    birthday: "",
+    phoneNumber: ""
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +128,9 @@ export default function VolunteerOnboardingPage() {
         personalEmail: "",
         team: "",
         startDate: "",
-        notes: ""
+        notes: "",
+        birthday: "",
+        phoneNumber: ""
       });
     } catch (err: any) {
       setError(err?.message ?? String(err));
@@ -157,7 +161,7 @@ export default function VolunteerOnboardingPage() {
         <h2 style={{ fontSize: 16, margin: 0, marginBottom: 12 }}>New request</h2>
 
         <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
             <Field
               label="First name *"
               value={form.firstName}
@@ -174,6 +178,21 @@ export default function VolunteerOnboardingPage() {
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
             <Field
+              label="Birthday"
+              value={form.birthday}
+              onChange={(v) => setForm((f) => ({ ...f, firstName: v }))}
+              type="date"
+            />
+            <Field
+              label="Phone Number"
+              value={form.phoneNumber}
+              onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
+              type="phonenumber"
+            />
+          </div>
+
+          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+            <Field
               label="Personal email *"
               value={form.personalEmail}
               onChange={(v) => setForm((f) => ({ ...f, personalEmail: v }))}
@@ -182,7 +201,7 @@ export default function VolunteerOnboardingPage() {
               autoComplete="email"
             />
             <Field
-              label="Team *"
+              label="Title *"
               value={form.team}
               onChange={(v) => setForm((f) => ({ ...f, team: v }))}
               placeholder="Events / Marketing / Tech..."
