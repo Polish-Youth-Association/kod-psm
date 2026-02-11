@@ -78,15 +78,17 @@ export default function VolunteerOnboardingPage() {
   
     setSubmitting(true);
     try {
-      const payload = {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        personalEmail: form.personalEmail.trim(),
-        team: form.team.trim(),
-        startDate: form.startDate.trim(),
-        notes: form.notes.trim(),
-        suggestedPrimaryEmail
-      };
+        const payload = {
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            personalEmail: form.personalEmail.trim(),
+            team: form.team.trim(),
+            startDate: form.startDate.trim(),
+            notes: form.notes.trim(),
+            birthday: form.birthday.trim(),
+            phoneNumber: form.phoneNumber.trim(),
+            suggestedPrimaryEmail
+            };
   
       const resp = await fetch("/api/onboarding/volunteer", {
         method: "POST",
@@ -177,17 +179,21 @@ export default function VolunteerOnboardingPage() {
           </div>
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-            <Field
-              label="Birthday"
-              value={form.birthday}
-              onChange={(v) => setForm((f) => ({ ...f, firstName: v }))}
-              type="date"
+          <Field
+            label="Birthday"
+            value={form.birthday}
+            onChange={(v) => setForm((f) => ({ ...f, birthday: v }))}
+            type="date"
+            autoComplete="bday"
             />
+
             <Field
-              label="Phone Number"
-              value={form.phoneNumber}
-              onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
-              type="phonenumber"
+            label="Phone number"
+            value={form.phoneNumber}
+            onChange={(v) => setForm((f) => ({ ...f, phoneNumber: v }))}
+            type="tel"
+            autoComplete="tel"
+            placeholder="+1 929 266 7551"
             />
           </div>
 
