@@ -26,15 +26,6 @@ export const ONBOARDING_TEMPLATE_HTML = `<div style="font-family: Arial, Helveti
         <li>To install Slack on your computer, <a href="https://slack.com/downloads" style="color: #1A73E8;">click here</a>. To download the iPhone app, <a href="https://slack.com/ios" style="color: #1A73E8;">click here</a>.</li>
       </ul>
     </li>
-        <li>
-      <strong>Gmail</strong>
-      <p>Once logging in, take the following steps to set up your Gmail preferences to PSM standard. Once logged in, click the settings icon in the top right, "See all settings", scroll down to SIGNATURE.</p>
-      <ul style="margin-top: 8px;">
-
-        <li>For New Emails and For Reply/Forwarding use your custom signature. </li>
-        <li>Check "Insert signature before quoted text in replies and remove the "--" line that precedes it."</li>
-      </ul>
-    </li>
   </ul>
 
   <p style="margin-bottom: 16px;">In the upcoming days, we will also send you a volunteering agreement and other documents for signature through DocuSign. Please sign and return these at your earliest convenience.</p>
