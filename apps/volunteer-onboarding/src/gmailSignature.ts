@@ -29,6 +29,7 @@ export function buildPolishYouthSignatureHtml(args: {
   email: string;
 }) {
   return `
+<div style="margin:0; padding:0; line-height:0; font-size:0; height:0; overflow:hidden;">&nbsp;</div>
 <div style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.35; color: #111;">
   <div style="font-weight:700; font-size:14px;">
     ${esc(args.firstName)} ${esc(args.lastName)}
