@@ -44,7 +44,7 @@ export function buildPolishYouthSignatureHtml(args: {
   <tr>
     <td style="padding:10px 0;">
       <img src="${esc(DEFAULTS.bannerUrl)}" alt="Polish Youth"
-        style="max-width:360px; width:100%; height:auto; border:0; display:block;" />
+        style="max-width:190px; width:100%; height:auto; border:0; display:block;" />
     </td>
   </tr>
 
