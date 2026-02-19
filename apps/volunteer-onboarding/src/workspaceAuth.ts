@@ -27,11 +27,11 @@ async function exchangeJwtForAccessToken(assertion: string) {
   if (!json.access_token) throw new Error("token exchange: missing access_token");
   return json.access_token as string;
 }
-
-export async function getDelegatedAccessToken(scopes: string[]) {
-  const subject = process.env.WORKSPACE_IMPERSONATE_ADMIN?.trim();
-  if (!subject) throw new Error("WORKSPACE_IMPERSONATE_ADMIN is not set");
-
+export async function getDelegatedAccessToken(scopes: string[], subjectEmail?: string) {
+  const defaultSubject = process.env.WORKSPACE_IMPERSONATE_ADMIN?.trim();
+  const subject = (subjectEmail ?? defaultSubject)?.trim();
+  if (!subject) throw new Error("WORKSPACE_IMPERSONATE_ADMIN is not set and no subjectEmail provided");
+  
   const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
   if (!serviceAccountEmail) throw new Error("GOOGLE_SERVICE_ACCOUNT_EMAIL is not set");
 
