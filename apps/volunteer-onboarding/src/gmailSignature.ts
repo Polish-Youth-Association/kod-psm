@@ -29,32 +29,47 @@ export function buildPolishYouthSignatureHtml(args: {
   email: string;
 }) {
   return `
-<div style="margin:0; padding:0; line-height:0; font-size:0; height:0; overflow:hidden;">&nbsp;</div>
-<div style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.35; color: #111;">
-  <div style="font-weight:700; font-size:14px;">
-    ${esc(args.firstName)} ${esc(args.lastName)}
-  </div>
+<table cellpadding="0" cellspacing="0" border="0"
+  style="border-collapse:collapse; font-family: Arial, Helvetica, sans-serif; font-size:13px; line-height:1.35; color:#111;">
+  <tr>
+    <td style="display:none; height:0; overflow:hidden; line-height:0; font-size:0;">&nbsp;</td>
+  </tr>
 
-  <div style="margin:10px 0;">
-    <img src="${esc(DEFAULTS.bannerUrl)}" alt="Polish Youth"
-      style="max-width:360px; width:100%; height:auto; border:0; display:block;" />
-  </div>
+  <tr>
+    <td style="font-weight:700; font-size:14px; padding:0 0 6px 0;">
+      ${esc(args.firstName)} ${esc(args.lastName)}
+    </td>
+  </tr>
 
-  <div style="margin-top:6px;">
-    <div>e. <a href="mailto:${esc(args.email)}" style="color:#111; text-decoration:none;">${esc(args.email)}</a></div>
-    <div>w. <a href="https://polishyouth.org" style="color:#111; text-decoration:none;">polishyouth.org</a></div>
-  </div>
+  <tr>
+    <td style="padding:10px 0;">
+      <img src="${esc(DEFAULTS.bannerUrl)}" alt="Polish Youth"
+        style="max-width:360px; width:100%; height:auto; border:0; display:block;" />
+    </td>
+  </tr>
 
-  <div style="margin-top:8px;">
-    <a href="${esc(DEFAULTS.instagramUrl)}" style="color:#111; text-decoration:none;">instagram</a>
-    <span style="color:#999;"> | </span>
-    <a href="${esc(DEFAULTS.facebookUrl)}" style="color:#111; text-decoration:none;">facebook</a>
-    <span style="color:#999;"> | </span>
-    <a href="${esc(DEFAULTS.linkedinUrl)}" style="color:#111; text-decoration:none;">linkedin</a>
-  </div>
+  <tr>
+    <td style="padding:0;">
+      e. <a href="mailto:${esc(args.email)}" style="color:#111; text-decoration:none;">${esc(args.email)}</a>
+    </td>
+  </tr>
 
-  <!-- managed:polishyouth -->
-</div>`.trim();
+  <tr>
+    <td style="padding:0 0 8px 0;">
+      w. <a href="https://polishyouth.org" style="color:#111; text-decoration:none;">polishyouth.org</a>
+    </td>
+  </tr>
+
+  <tr>
+    <td style="padding:0;">
+      <a href="${esc(DEFAULTS.instagramUrl)}" style="color:#111; text-decoration:none;">instagram</a>
+      <span style="color:#999;"> | </span>
+      <a href="${esc(DEFAULTS.facebookUrl)}" style="color:#111; text-decoration:none;">facebook</a>
+      <span style="color:#999;"> | </span>
+      <a href="${esc(DEFAULTS.linkedinUrl)}" style="color:#111; text-decoration:none;">linkedin</a>
+    </td>
+  </tr>
+</table>`.trim();
 }
 
 function sleep(ms: number) {
