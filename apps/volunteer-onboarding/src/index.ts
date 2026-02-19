@@ -98,6 +98,8 @@ const app = createApp((router) => {
         }
       });
 
+      await sleep(10_000);
+
       const createdEmail = created.data.primaryEmail || primaryEmail;
 
       let signatureStatus: "Set" | "Failed" = "Set";
@@ -137,7 +139,7 @@ const app = createApp((router) => {
           htmlTemplate: ONBOARDING_TEMPLATE_HTML
         });
         
-        await sleep(20_000);
+        await sleep(10_000);
 
         await sendOnboardingEmail({
           toPersonalEmail: createdEmail,
