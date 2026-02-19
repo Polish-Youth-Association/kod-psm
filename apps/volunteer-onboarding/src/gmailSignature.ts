@@ -5,13 +5,13 @@ const GMAIL_SETTINGS_SCOPE = "https://www.googleapis.com/auth/gmail.settings.bas
 
 const DEFAULTS = {
   bannerUrl: process.env.SIGNATURE_BANNER_URL?.trim() ||
-    "https://polishyouth.org/assets/polish-youth-banner.png",
+    "https://static.wixstatic.com/media/d7f1c6_4692e1506cb8406798ac7defaf85bed1~mv2.png",
   instagramUrl: process.env.SIGNATURE_INSTAGRAM_URL?.trim() ||
-    "https://instagram.com/polishyouth_org",
+    "https://instagram.com/polishyouthassn",
   facebookUrl: process.env.SIGNATURE_FACEBOOK_URL?.trim() ||
-    "https://facebook.com/polishyouth",
+    "https://facebook.com/polishyouthassn",
   linkedinUrl: process.env.SIGNATURE_LINKEDIN_URL?.trim() ||
-    "https://linkedin.com/company/polish-youth",
+    "https://linkedin.com/company/polishyouthassn",
 };
 
 function esc(s: string) {
