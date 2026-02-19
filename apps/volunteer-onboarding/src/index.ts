@@ -5,6 +5,7 @@ import { sendOnboardingEmail } from "./gmail";
 import { ONBOARDING_TEMPLATE_HTML } from "./onboardingTemplate";
 import { ONBOARDING_TEMPLATE_PSM_HTML } from "./onboardingTemplatePsmInbox";
 import { triggerSlackDocusignWorkflow } from "./slack";
+import { buildPolishYouthSignatureHtml, setGmailSignatureForUser } from "./gmailSignature";
 
 const PORT = Number(process.env.PORT) || 8080;
 
@@ -99,6 +100,26 @@ const app = createApp((router) => {
 
       const createdEmail = created.data.primaryEmail || primaryEmail;
 
+      let signatureStatus: "Set" | "Failed" = "Set";
+      let signatureError: string | undefined;
+
+      try {
+        const signatureHtml = buildPolishYouthSignatureHtml({
+          firstName: String(body.firstName).trim(),
+          lastName: String(body.lastName).trim(),
+          email: createdEmail,
+        });
+
+        await setGmailSignatureForUser({
+          userEmail: createdEmail,
+          signatureHtml,
+          retries: 2,
+        });
+      } catch (e: any) {
+        signatureStatus = "Failed";
+        signatureError = e?.message ?? String(e);
+        console.error("signature update failed", { requestId, signatureError });
+      }
       // Send onboarding email to personal email
       let emailStatus: "Sent" | "Failed" = "Sent";
       let emailError: string | undefined;
@@ -165,6 +186,10 @@ const app = createApp((router) => {
         docusign: {
           status: docusignStatus,
           error: docusignError
+        },
+        signature: {
+          status: signatureStatus,
+          error: signatureError
         }
       });
     } catch (err: any) {
