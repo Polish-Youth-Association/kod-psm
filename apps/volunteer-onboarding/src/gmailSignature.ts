@@ -63,7 +63,7 @@ function sleep(ms: number) {
 export async function setGmailSignatureForUser(args: {
   userEmail: string;       // mailbox to update
   signatureHtml: string;
-  retries?: number;        // default 6
+  retries?: number;
 }) {
   const retries = args.retries ?? 6;
 
