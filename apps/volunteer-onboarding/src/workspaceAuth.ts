@@ -31,7 +31,7 @@ export async function getDelegatedAccessToken(scopes: string[], subjectEmail?: s
   const defaultSubject = process.env.WORKSPACE_IMPERSONATE_ADMIN?.trim();
   const subject = (subjectEmail ?? defaultSubject)?.trim();
   if (!subject) throw new Error("WORKSPACE_IMPERSONATE_ADMIN is not set and no subjectEmail provided");
-  
+
   const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
   if (!serviceAccountEmail) throw new Error("GOOGLE_SERVICE_ACCOUNT_EMAIL is not set");
 
@@ -48,5 +48,8 @@ export async function getDelegatedAccessToken(scopes: string[], subjectEmail?: s
   };
 
   const signedJwt = await signClaims(claims, serviceAccountEmail);
+  console.log("JWT iss:", claims.iss);
+  console.log("JWT sub:", claims.sub);
+  console.log("JWT scope:", claims.scope);
   return await exchangeJwtForAccessToken(signedJwt);
 }
