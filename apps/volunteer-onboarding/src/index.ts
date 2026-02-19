@@ -137,7 +137,7 @@ const app = createApp((router) => {
           htmlTemplate: ONBOARDING_TEMPLATE_HTML
         });
         
-        await sleep(10_000);
+        await sleep(20_000);
 
         await sendOnboardingEmail({
           toPersonalEmail: createdEmail,
