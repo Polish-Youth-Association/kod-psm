@@ -1,7 +1,7 @@
 export const ONBOARDING_TEMPLATE_HTML = `<div style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #333; line-height: 1.8; margin: 0; padding: 0;">
   <p style="margin-bottom: 16px;">Hi {{FIRST_NAME}},</p>
 
-  <p style="margin-bottom: 16px;">Welcome to the <strong>Polish Youth Association</strong>! Congratulations on being appointed to the <strong>{{TEAM}}</strong> team! We have successfully created your Google and Slack accounts. Here are the instructions on how to access these resources:</p>
+  <p style="margin-bottom: 16px;">Welcome to the <strong>Polish Youth Association</strong>! Congratulations on being appointed to the positino of {{TEAM}}! We have successfully created your Google and Slack accounts. Here are the instructions on how to access these resources:</p>
 
   <ul style="margin-bottom: 16px;">
     <li style="margin-bottom: 16px;">
@@ -24,15 +24,6 @@ export const ONBOARDING_TEMPLATE_HTML = `<div style="font-family: Arial, Helveti
         <li>Your Slack invitation has been sent to your Polish Youth Association email.</li>
         <li>For resources on how to use Slack, <a href="https://slack.com/resources" style="color: #1A73E8;">click here</a>.</li>
         <li>To install Slack on your computer, <a href="https://slack.com/downloads" style="color: #1A73E8;">click here</a>. To download the iPhone app, <a href="https://slack.com/ios" style="color: #1A73E8;">click here</a>.</li>
-      </ul>
-    </li>
-        <li>
-      <strong>Gmail</strong>
-      <p>Once logging in, take the following steps to set up your Gmail preferences to PSM standard. Once logged in, click the settings icon in the top right, "See all settings", scroll down to SIGNATURE.</p>
-      <ul style="margin-top: 8px;">
-
-        <li>For New Emails and For Reply/Forwarding use your custom signature. </li>
-        <li>Check "Insert signature before quoted text in replies and remove the "--" line that precedes it."</li>
       </ul>
     </li>
   </ul>
