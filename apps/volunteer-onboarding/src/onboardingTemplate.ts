@@ -1,7 +1,7 @@
 export const ONBOARDING_TEMPLATE_HTML = `<div style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #333; line-height: 1.8; margin: 0; padding: 0;">
   <p style="margin-bottom: 16px;">Hi {{FIRST_NAME}},</p>
 
-  <p style="margin-bottom: 16px;">Welcome to the <strong>Polish Youth Association</strong>! Congratulations on being appointed to the <strong>{{TEAM}}</strong> team! We have successfully created your Google and Slack accounts. Here are the instructions on how to access these resources:</p>
+  <p style="margin-bottom: 16px;">Welcome to the <strong>Polish Youth Association</strong>! Congratulations on being appointed to the positino of {{TEAM}}! We have successfully created your Google and Slack accounts. Here are the instructions on how to access these resources:</p>
 
   <ul style="margin-bottom: 16px;">
     <li style="margin-bottom: 16px;">
