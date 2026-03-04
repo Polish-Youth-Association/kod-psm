@@ -12,6 +12,8 @@ type VolunteerOnboardingRequest = {
   startDate: string; // YYYY-MM-DD or ""
   notes: string;
   suggestedPrimaryEmail: string;
+  phoneNumber: string;
+  address: string;
   status: "Draft" | "Submitted" | "Approved" | "Provisioning" | "Completed" | "Rejected";
 };
 
@@ -46,7 +48,8 @@ export default function VolunteerOnboardingPage() {
     startDate: "",
     notes: "",
     birthday: "",
-    phoneNumber: ""
+    phoneNumber: "",
+    address: ""
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +90,7 @@ export default function VolunteerOnboardingPage() {
             notes: form.notes.trim(),
             birthday: form.birthday.trim(),
             phoneNumber: form.phoneNumber.trim(),
+            address: form.address.trim(),
             suggestedPrimaryEmail
             };
   
@@ -117,6 +121,8 @@ export default function VolunteerOnboardingPage() {
         personalEmail: payload.personalEmail,
         team: payload.team,
         startDate: payload.startDate,
+        phoneNumber: payload.phoneNumber,
+        address: payload.address,
         notes: payload.notes,
         suggestedPrimaryEmail: payload.suggestedPrimaryEmail,
         status: "Submitted"
@@ -132,7 +138,8 @@ export default function VolunteerOnboardingPage() {
         startDate: "",
         notes: "",
         birthday: "",
-        phoneNumber: ""
+        phoneNumber: "",
+        address: ""
       });
     } catch (err: any) {
       setError(err?.message ?? String(err));
