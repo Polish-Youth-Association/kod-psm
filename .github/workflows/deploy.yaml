@@ -8,8 +8,8 @@ on:
 
 env:
   GCP_REGION: us-central1
-  # Using your existing "DEV" secrets; rename if you want.
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_DEV }}
+  # Used to use dev, but is now from prod.
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_PROD }}
   IMAGE_REPO: apps
   REGION: us-central1
 
@@ -29,15 +29,15 @@ jobs:
       - name: Authenticate to GCP (WIF)
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_DEV }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_DEV }}
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_PROD }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_PROD }}
           token_format: "access_token"
           access_token_lifetime: "3600s"
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ env.GCP_PROJECT_ID }}
+          project_id: ${{ env.GCP_PROJECT_ID_PROD }}
 
       - name: Debug GCP auth
         run: |
@@ -89,16 +89,16 @@ jobs:
 
           for APP in $APPS; do
             echo "::group::Applying IAM for $APP"
-            node scripts/apply-iam.js --app "$APP" --project "${GCP_PROJECT_ID}"
+            node scripts/apply-iam.js --app "$APP" --project "${GCP_PROJECT_ID_PROD}"
             echo "::endgroup::"
 
             SERVICE="$APP"
-            IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
+            IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID_PROD}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
           
             echo "::group::Building image for $APP"
           
             gcloud builds submit . \
-              --project="$GCP_PROJECT_ID" \
+              --project="$GCP_PROJECT_ID_PROD" \
               --config=infra/cloudbuild.docker.yaml \
               --substitutions=_APP="$APP",_IMAGE="$IMAGE"
           
@@ -109,7 +109,7 @@ jobs:
               --image="$IMAGE" \
               --region="$GCP_REGION" \
               --platform=managed \
-              --project="$GCP_PROJECT_ID" \
+              --project="$GCP_PROJECT_ID_PROD" \
 
             echo "=== Wiring IAP + domain access for $SERVICE ==="
 
@@ -117,7 +117,7 @@ jobs:
               --region "$REGION" \
               --member="domain:polishyouth.org" \
               --role="roles/run.invoker" \
-              --project="$GCP_PROJECT_ID" \
+              --project="$GCP_PROJECT_ID_PROD" \
               --quiet
             
             echo "::endgroup::"
