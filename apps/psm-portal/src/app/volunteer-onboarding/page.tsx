@@ -12,6 +12,8 @@ type VolunteerOnboardingRequest = {
   startDate: string; // YYYY-MM-DD or ""
   notes: string;
   suggestedPrimaryEmail: string;
+  phoneNumber: string;
+  address: string;
   status: "Draft" | "Submitted" | "Approved" | "Provisioning" | "Completed" | "Rejected";
 };
 
@@ -37,6 +39,27 @@ function toEmailLocalPart(first: string, last: string) {
   return base || "";
 }
 
+async function fetchJob(jobId: string) {
+  const resp = await fetch(`/api/onboarding/jobs/${jobId}`);
+  const text = await resp.text();
+  let json: any = null;
+  try { json = JSON.parse(text); } catch {}
+  if (!resp.ok || !json?.ok) {
+    throw new Error(json?.error ?? `Failed to fetch job (HTTP ${resp.status})`);
+  }
+  return json.job ?? json.body?.job;
+}
+
+function mapJobStatus(jobStatus: string): VolunteerOnboardingRequest["status"] {
+  switch (jobStatus) {
+    case "COMPLETED": return "Completed";
+    case "FAILED": return "Rejected";
+    case "QUEUED":
+    case "RUNNING":
+    default: return "Provisioning";
+  }
+}
+
 export default function VolunteerOnboardingPage() {
   const [form, setForm] = useState({
     firstName: "",
@@ -46,7 +69,8 @@ export default function VolunteerOnboardingPage() {
     startDate: "",
     notes: "",
     birthday: "",
-    phoneNumber: ""
+    phoneNumber: "",
+    address: ""
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +111,7 @@ export default function VolunteerOnboardingPage() {
             notes: form.notes.trim(),
             birthday: form.birthday.trim(),
             phoneNumber: form.phoneNumber.trim(),
+            address: form.address.trim(),
             suggestedPrimaryEmail
             };
   
@@ -106,23 +131,47 @@ export default function VolunteerOnboardingPage() {
         throw new Error(json?.error ?? `Non-JSON or failed response (HTTP ${resp.status}): ${text.slice(0, 200)}`);
       }
   
-      const result = json.body;
-      if (!result?.ok) throw new Error(result?.error ?? "Backend rejected request");
+      const jobId = json?.jobId ?? json?.body?.jobId;
+      if (!jobId) throw new Error("Missing jobId from backend response");
       
       const record: VolunteerOnboardingRequest = {
-        id: result.requestId,
+        id: jobId,
         createdAt: new Date().toISOString(),
         firstName: payload.firstName,
         lastName: payload.lastName,
         personalEmail: payload.personalEmail,
         team: payload.team,
         startDate: payload.startDate,
+        phoneNumber: payload.phoneNumber,
+        address: payload.address,
         notes: payload.notes,
         suggestedPrimaryEmail: payload.suggestedPrimaryEmail,
-        status: "Submitted"
+        status: "Provisioning"
       };
-  
+      
       setRequests((prev) => [record, ...prev]);
+
+      // poll job status
+      const start = Date.now();
+      const timeoutMs = 5 * 60 * 1000;
+
+      (async function poll() {
+        while (Date.now() - start < timeoutMs) {
+          try {
+            const job = await fetchJob(jobId);
+            const newStatus = mapJobStatus(job?.status);
+
+            setRequests((prev) =>
+              prev.map((r) => (r.id === jobId ? { ...r, status: newStatus } : r))
+            );
+
+            if (job?.status === "COMPLETED" || job?.status === "FAILED") return;
+          } catch {
+            // ignore transient errors
+          }
+          await new Promise((r) => setTimeout(r, 4000));
+        }
+      })();
   
       setForm({
         firstName: "",
@@ -132,7 +181,8 @@ export default function VolunteerOnboardingPage() {
         startDate: "",
         notes: "",
         birthday: "",
-        phoneNumber: ""
+        phoneNumber: "",
+        address: ""
       });
     } catch (err: any) {
       setError(err?.message ?? String(err));
