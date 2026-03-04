@@ -4,7 +4,7 @@ name: Deploy Apps to Cloud Run
 on:
   push:
     branches:
-      - main
+      - prod
 
 env:
   GCP_REGION: us-central1
