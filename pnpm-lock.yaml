@@ -245,15 +245,9 @@ importers:
 
   apps/volunteer-onboarding:
     dependencies:
-      '@google-cloud/firestore':
-        specifier: ^8.3.0
-        version: 8.3.0
       '@google-cloud/iam-credentials':
         specifier: ^4.2.1
         version: 4.2.1
-      '@google-cloud/tasks':
-        specifier: ^6.2.1
-        version: 6.2.1
       '@kod-psm/http-helpers':
         specifier: workspace:*
         version: link:../../libs/http-helpers
@@ -869,10 +863,6 @@ packages:
     resolution: {integrity: sha512-EW/O8ktzwLfyWBOsNuhRoMi8lrC3clHM5LVFhGvO1HCsLozCOOXRAlHrYBoE6HL42Sc8yYMuCb2XqcnJ4OOEpw==}
     engines: {node: '>=14.0.0'}
 
-  '@google-cloud/firestore@8.3.0':
-    resolution: {integrity: sha512-OYadXaHxx8J5GQtCwDNjaVu2+O9Ozdst4Iqi+vDTI/WmLTO56XX3QBOXp4T+qh3tyQzl9YzDBrmA7o8n1xTouA==}
-    engines: {node: '>=18'}
-
   '@google-cloud/iam-credentials@4.2.1':
     resolution: {integrity: sha512-y9XEoFat+Xc1QsmB1jrbPDE1lakZv7ZKcHK6GUXg+3j24I2w8uhJ55GMVWbMr5tGZkaK9D22eYgdemzPy5GCqw==}
     engines: {node: '>=18'}
@@ -892,10 +882,6 @@ packages:
   '@google-cloud/storage@7.19.0':
     resolution: {integrity: sha512-n2FjE7NAOYyshogdc7KQOl/VZb4sneqPjWouSyia9CMDdMhRX5+RIbqalNmC7LOLzuLAN89VlF2HvG8na9G+zQ==}
     engines: {node: '>=14'}
-
-  '@google-cloud/tasks@6.2.1':
-    resolution: {integrity: sha512-Y21jNAdaUwZvYQijJSE9E27NA87c/Wl9fZxNDGx6WsWFFGEBmJmc1zg2fXLXTW0kPvKIxHQC+IcKa9SNgvIEsQ==}
-    engines: {node: '>=18'}
 
   '@grpc/grpc-js@1.14.3':
     resolution: {integrity: sha512-Iq8QQQ/7X3Sac15oB6p0FmUg/klxQvXLeileoqrTRGJYLV+/9tubbr9ipz0GKHjmXVsgFPo/+W+2cA8eNcR+XA==}
@@ -4851,16 +4837,6 @@ snapshots:
       - supports-color
     optional: true
 
-  '@google-cloud/firestore@8.3.0':
-    dependencies:
-      '@opentelemetry/api': 1.9.0
-      fast-deep-equal: 3.1.3
-      functional-red-black-tree: 1.0.1
-      google-gax: 5.0.6
-      protobufjs: 7.5.4
-    transitivePeerDependencies:
-      - supports-color
-
   '@google-cloud/iam-credentials@4.2.1':
     dependencies:
       google-gax: 5.0.6
@@ -4895,12 +4871,6 @@ snapshots:
       uuid: 8.3.2
     transitivePeerDependencies:
       - encoding
-      - supports-color
-
-  '@google-cloud/tasks@6.2.1':
-    dependencies:
-      google-gax: 5.0.6
-    transitivePeerDependencies:
       - supports-color
 
   '@grpc/grpc-js@1.14.3':
@@ -5306,7 +5276,8 @@ snapshots:
 
   '@nolyfill/is-core-module@1.0.39': {}
 
-  '@opentelemetry/api@1.9.0': {}
+  '@opentelemetry/api@1.9.0':
+    optional: true
 
   '@pdf-lib/fontkit@1.1.1':
     dependencies:
@@ -6921,7 +6892,8 @@ snapshots:
       hasown: 2.0.2
       is-callable: 1.2.7
 
-  functional-red-black-tree@1.0.1: {}
+  functional-red-black-tree@1.0.1:
+    optional: true
 
   functions-have-names@1.2.3: {}
 
