@@ -93,7 +93,7 @@ jobs:
             echo "::endgroup::"
 
             SERVICE="$APP"
-            IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID_PROD}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
+            IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
           
             echo "::group::Building image for $APP"
           
