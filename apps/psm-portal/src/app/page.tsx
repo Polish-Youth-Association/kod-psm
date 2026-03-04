@@ -48,7 +48,7 @@ export default function Home() {
             width: "fit-content"
           }}
         >
-          Test API
+          Test API Status
         </button>
 
         {result ? (
