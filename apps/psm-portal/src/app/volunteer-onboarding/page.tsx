@@ -161,13 +161,13 @@ export default function VolunteerOnboardingPage() {
         <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
             <Field
-              label="First name *"
+              label="First Name *"
               value={form.firstName}
               onChange={(v) => setForm((f) => ({ ...f, firstName: v }))}
               autoComplete="given-name"
             />
             <Field
-              label="Last name *"
+              label="Last Name *"
               value={form.lastName}
               onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
               autoComplete="family-name"
@@ -176,7 +176,7 @@ export default function VolunteerOnboardingPage() {
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
           <Field
-            label="Birthday"
+            label="Birthday *"
             value={form.birthday}
             onChange={(v) => setForm((f) => ({ ...f, birthday: v }))}
             type="date"
@@ -184,7 +184,7 @@ export default function VolunteerOnboardingPage() {
             />
 
             <Field
-            label="Phone number"
+            label="Phone number *"
             value={form.phoneNumber}
             onChange={(v) => setForm((f) => ({ ...f, phoneNumber: v }))}
             type="tel"
