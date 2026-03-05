@@ -22,31 +22,8 @@ type VolunteerOnboardingPayload = {
   title?: string;
 };
 
-async function waitForWorkspaceUser(directory: any, userId: string) {
-  const timeout = 30000; // 30 seconds max
-  const interval = 2000; // check every 2 seconds
-  const start = Date.now();
-
-  while (true) {
-    try {
-      const res = await directory.users.get({
-        userKey: userId,
-        projection: "full"
-      });
-
-      return res.data; // user is ready
-    } catch (err: any) {
-      if (err.code !== 404) {
-        throw err; // real error
-      }
-
-      if (Date.now() - start > timeout) {
-        throw new Error("Workspace user provisioning timeout");
-      }
-
-      await new Promise((r) => setTimeout(r, interval));
-    }
-  }
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
 function newId() {
@@ -121,6 +98,7 @@ const app = createApp((router) => {
           changePasswordAtNextLogin: true,
           recoveryEmail: String(body.personalEmail).trim(),
           orgUnitPath,
+      
           ...(body.phoneNumber && String(body.phoneNumber).trim()
             ? {
                 phones: [
@@ -131,6 +109,7 @@ const app = createApp((router) => {
                 ]
               }
             : {}),
+      
           ...(body.title && String(body.title).trim()
             ? {
                 organizations: [
@@ -141,9 +120,10 @@ const app = createApp((router) => {
                 ]
               }
             : {}),
+      
           ...(body.birthday && String(body.birthday).trim()
             ? (() => {
-              const [y, m, d] = String(body.birthday).trim().split("-").map(Number);
+                const [y, m, d] = String(body.birthday).trim().split("-").map(Number);
                 if (!y || !m || !d) return {};
                 return {
                   birthdays: [
@@ -157,8 +137,7 @@ const app = createApp((router) => {
         }
       });
 
-      await waitForWorkspaceUser(directory, created.data.id!);
-
+      await sleep(10_000);
       const createdEmail = created.data.primaryEmail || primaryEmail;
 
       let signatureStatus: "Set" | "Failed" = "Set";
@@ -199,6 +178,8 @@ const app = createApp((router) => {
           htmlTemplate: ONBOARDING_TEMPLATE_HTML
         });
         
+        await sleep(10_000);
+
         await sendOnboardingEmail({
           toPersonalEmail: createdEmail,
           firstName: String(body.firstName).trim(),
