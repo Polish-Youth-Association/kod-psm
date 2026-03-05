@@ -17,6 +17,9 @@ type VolunteerOnboardingPayload = {
   startDate?: string;
   notes?: string;
   suggestedPrimaryEmail?: string;
+  phoneNumber?: string;
+  birthday?: string;
+  title?: string;
 };
 
 function sleep(ms: number) {
@@ -30,7 +33,7 @@ function newId() {
 function isEmail(s: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s).trim());
 }
- // change
+
 function toEmailLocalPart(first: string, last: string) {
   return `${first}.${last}`
     .trim()
@@ -94,7 +97,43 @@ const app = createApp((router) => {
           password: tempPassword,
           changePasswordAtNextLogin: true,
           recoveryEmail: String(body.personalEmail).trim(),
-          orgUnitPath
+          orgUnitPath,
+      
+          ...(body.phoneNumber && String(body.phoneNumber).trim()
+            ? {
+                phones: [
+                  {
+                    type: "mobile", // or "home" if you prefer
+                    value: String(body.phoneNumber).trim()
+                  }
+                ]
+              }
+            : {}),
+      
+          ...(body.title && String(body.title).trim()
+            ? {
+                organizations: [
+                  {
+                    title: String(body.title).trim(),
+                    primary: true
+                  }
+                ]
+              }
+            : {}),
+      
+          ...(body.birthday && String(body.birthday).trim()
+            ? (() => {
+                const [m, d, y] = String(body.birthday).trim().split("-").map(Number);
+                if (!y || !m || !d) return {};
+                return {
+                  birthdays: [
+                    {
+                      date: { year: y, month: m, day: d }
+                    }
+                  ]
+                };
+              })()
+            : {})
         }
       });
 
