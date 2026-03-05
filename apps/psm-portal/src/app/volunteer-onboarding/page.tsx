@@ -61,7 +61,7 @@ export default function VolunteerOnboardingPage() {
       isEmail(form.personalEmail) &&
       form.title.trim().length > 0 &&
       form.birthday.trim().length > 0 &&
-      form.phoneNumber.trim().length > 0 &&
+      form.phoneNumber.trim().length > 0
     );
   }, [form]);
 
