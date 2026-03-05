@@ -8,7 +8,7 @@ type VolunteerOnboardingRequest = {
   firstName: string;
   lastName: string;
   personalEmail: string;
-  team: string;
+  title: string;
   startDate: string; // YYYY-MM-DD or ""
   notes: string;
   suggestedPrimaryEmail: string;
@@ -42,7 +42,7 @@ export default function VolunteerOnboardingPage() {
     firstName: "",
     lastName: "",
     personalEmail: "",
-    team: "",
+    title: "",
     startDate: "",
     notes: "",
     birthday: "",
@@ -63,7 +63,7 @@ export default function VolunteerOnboardingPage() {
       form.firstName.trim().length > 0 &&
       form.lastName.trim().length > 0 &&
       isEmail(form.personalEmail) &&
-      form.team.trim().length > 0
+      form.title.trim().length > 0
     );
   }, [form]);
 
@@ -72,7 +72,7 @@ export default function VolunteerOnboardingPage() {
     setError(null);
   
     if (!canSubmit) {
-      setError("Fill in required fields: first name, last name, personal email, team.");
+      setError("Fill in required fields: first name, last name, personal email, title.");
       return;
     }
   
@@ -82,7 +82,7 @@ export default function VolunteerOnboardingPage() {
             firstName: form.firstName.trim(),
             lastName: form.lastName.trim(),
             personalEmail: form.personalEmail.trim(),
-            team: form.team.trim(),
+            title: form.title.trim(),
             startDate: form.startDate.trim(),
             notes: form.notes.trim(),
             birthday: form.birthday.trim(),
@@ -101,12 +101,8 @@ export default function VolunteerOnboardingPage() {
       try {
         json = JSON.parse(text);
       } catch {}
-      
-      if (!resp.ok || !json?.ok) {
-        throw new Error(json?.error ?? `Non-JSON or failed response (HTTP ${resp.status}): ${text.slice(0, 200)}`);
-      }
   
-      const result = json.body;
+      const result = json;
       if (!result?.ok) throw new Error(result?.error ?? "Backend rejected request");
       
       const record: VolunteerOnboardingRequest = {
@@ -115,7 +111,7 @@ export default function VolunteerOnboardingPage() {
         firstName: payload.firstName,
         lastName: payload.lastName,
         personalEmail: payload.personalEmail,
-        team: payload.team,
+        title: payload.title,
         startDate: payload.startDate,
         notes: payload.notes,
         suggestedPrimaryEmail: payload.suggestedPrimaryEmail,
@@ -128,7 +124,7 @@ export default function VolunteerOnboardingPage() {
         firstName: "",
         lastName: "",
         personalEmail: "",
-        team: "",
+        title: "",
         startDate: "",
         notes: "",
         birthday: "",
@@ -208,8 +204,8 @@ export default function VolunteerOnboardingPage() {
             />
             <Field
               label="Title *"
-              value={form.team}
-              onChange={(v) => setForm((f) => ({ ...f, team: v }))}
+              value={form.title}
+              onChange={(v) => setForm((f) => ({ ...f, title: v }))}
               placeholder="Events / Marketing / Tech..."
             />
           </div>
@@ -298,7 +294,7 @@ export default function VolunteerOnboardingPage() {
                   "Request ID",
                   "Name",
                   "Personal Email",
-                  "Team",
+                  "Title",
                   "Start Date",
                   "Suggested PSM Email",
                   "Status"
@@ -334,7 +330,7 @@ export default function VolunteerOnboardingPage() {
                       {r.firstName} {r.lastName}
                     </td>
                     <td style={cellStyle}>{r.personalEmail}</td>
-                    <td style={cellStyle}>{r.team}</td>
+                    <td style={cellStyle}>{r.title}</td>
                     <td style={cellStyle}>{r.startDate || ""}</td>
                     <td style={cellStyle}>{r.suggestedPrimaryEmail}</td>
                     <td style={cellStyle}>{r.status}</td>
