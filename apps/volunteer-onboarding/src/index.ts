@@ -30,7 +30,7 @@ function newId() {
 function isEmail(s: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s).trim());
 }
-
+ // change
 function toEmailLocalPart(first: string, last: string) {
   return `${first}.${last}`
     .trim()
