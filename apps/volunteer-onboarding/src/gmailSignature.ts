@@ -27,6 +27,7 @@ export function buildPolishYouthSignatureHtml(args: {
   firstName: string;
   lastName: string;
   email: string;
+  title: string;
 }) {
   return `
 <table cellpadding="0" cellspacing="0" border="0"
@@ -38,6 +39,12 @@ export function buildPolishYouthSignatureHtml(args: {
   <tr>
     <td style="font-weight:700; font-size:14px; padding:0 0 6px 0;">
       ${esc(args.firstName)} ${esc(args.lastName)}
+    </td>
+  </tr>
+
+   <tr>
+    <td style="font-weight:700; font-size:14px; padding:0 0 6px 0;">
+      ${esc(args.title)}
     </td>
   </tr>
 
