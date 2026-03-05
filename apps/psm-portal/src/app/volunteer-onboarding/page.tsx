@@ -15,10 +15,6 @@ type VolunteerOnboardingRequest = {
   status: "Draft" | "Submitted" | "Approved" | "Provisioning" | "Completed" | "Rejected";
 };
 
-function newId() {
-  return `req_${Math.random().toString(36).slice(2, 10)}`;
-}
-
 function isEmail(s: string) {
   // good-enough validation for UI
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -63,7 +59,11 @@ export default function VolunteerOnboardingPage() {
       form.firstName.trim().length > 0 &&
       form.lastName.trim().length > 0 &&
       isEmail(form.personalEmail) &&
-      form.title.trim().length > 0
+      form.title.trim().length > 0 &&
+      form.birthday.trim().length > 0 &&
+      form.phoneNumber.trim().length > 0 &&
+      form.startDate.trim().length > 0 &&
+      form.notes.trim().length > 0
     );
   }, [form]);
 
@@ -72,7 +72,7 @@ export default function VolunteerOnboardingPage() {
     setError(null);
   
     if (!canSubmit) {
-      setError("Fill in required fields: first name, last name, personal email, title.");
+      setError("Fill in required fields.");
       return;
     }
   
