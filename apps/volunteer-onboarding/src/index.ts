@@ -160,7 +160,7 @@ const app = createApp((router) => {
         }
       });
 
-      await waitForWorkspaceUser(directory, created.data.id!);
+      await waitForWorkspaceUser(directory, primaryEmail);
 
       const createdEmail = created.data.primaryEmail || primaryEmail;
 
