@@ -22,8 +22,31 @@ type VolunteerOnboardingPayload = {
   title?: string;
 };
 
-function sleep(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+async function waitForWorkspaceUser(directory: any, userId: string) {
+  const timeout = 30000; // 30 seconds max
+  const interval = 2000; // check every 2 seconds
+  const start = Date.now();
+
+  while (true) {
+    try {
+      const res = await directory.users.get({
+        userKey: userId,
+        projection: "full"
+      });
+
+      return res.data; // user is ready
+    } catch (err: any) {
+      if (err.code !== 404) {
+        throw err; // real error
+      }
+
+      if (Date.now() - start > timeout) {
+        throw new Error("Workspace user provisioning timeout");
+      }
+
+      await new Promise((r) => setTimeout(r, interval));
+    }
+  }
 }
 
 function newId() {
@@ -137,7 +160,8 @@ const app = createApp((router) => {
         }
       });
 
-      await sleep(10_000);
+      await waitForWorkspaceUser(directory, created.data.id!);
+
       const createdEmail = created.data.primaryEmail || primaryEmail;
 
       let signatureStatus: "Set" | "Failed" = "Set";
@@ -178,8 +202,6 @@ const app = createApp((router) => {
           htmlTemplate: ONBOARDING_TEMPLATE_HTML
         });
         
-        await sleep(10_000);
-
         await sendOnboardingEmail({
           toPersonalEmail: createdEmail,
           firstName: String(body.firstName).trim(),

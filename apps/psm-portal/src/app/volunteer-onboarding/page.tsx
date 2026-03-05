@@ -62,8 +62,6 @@ export default function VolunteerOnboardingPage() {
       form.title.trim().length > 0 &&
       form.birthday.trim().length > 0 &&
       form.phoneNumber.trim().length > 0 &&
-      form.startDate.trim().length > 0 &&
-      form.notes.trim().length > 0
     );
   }, [form]);
 
