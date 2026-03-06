@@ -3,7 +3,7 @@ name: Infra Check
 on:
   pull_request:
     branches:
-      - main
+      - prod
 
 env:
   GCP_REGION: us-central1
