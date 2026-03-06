@@ -248,10 +248,9 @@ function main() {
   const appId = args.app;
   const projectId = args.project || process.env.GCP_PROJECT_ID;
 
-  if (!appId) {
-    console.error("Usage: node scripts/apply-iam.js --app <app-id> [--project <project-id>]");
-    process.exit(1);
-  }
+  const allowCreate =
+  (process.env.ALLOW_SA_CREATE || "false").toLowerCase() === "true";
+
   if (!projectId) {
     console.error("GCP project id is required (pass --project or set GCP_PROJECT_ID).");
     process.exit(1);
@@ -274,7 +273,35 @@ function main() {
     projectId
   );
 
-  ensureServiceAccount(projectId, serviceAccountEmail, appId);
+  try {
+  run(
+    [
+      "gcloud iam service-accounts describe",
+      serviceAccountEmail,
+      `--project="${projectId}"`,
+      "--quiet"
+    ].join(" ")
+  );
+} catch (err) {
+  if (!allowCreate) {
+    console.error(
+      `Service account ${serviceAccountEmail} does not exist and ALLOW_SA_CREATE=false. ` +
+      `Create it once in GCP (or set ALLOW_SA_CREATE=true).`
+    );
+    process.exit(1);
+  }
+  console.log(`Service account ${serviceAccountEmail} not found. Creating it...`);
+  const accountId = serviceAccountEmail.split("@")[0];
+  run(
+    [
+      "gcloud iam service-accounts create",
+      accountId,
+      `--project="${projectId}"`,
+      `--display-name="${appId} service account"`,
+      "--quiet"
+    ].join(" ")
+  );
+}
 
   const member = `serviceAccount:${serviceAccountEmail}`;
   const resolvedResources = (manifest.resources || []).map((resource) => ({

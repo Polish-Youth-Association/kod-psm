@@ -1,7 +1,7 @@
 export const ONBOARDING_TEMPLATE_PSM_HTML = `
 <div style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color:#333; line-height:1.8;">
   <p>Hi {{FIRST_NAME}},</p>
-  <p>Welcome to the <strong>Polish Youth Association</strong> — you're on the <strong>{{TEAM}}</strong> team.</p>
+  <p>Welcome to the <strong>Polish Youth Association</strong> — you're our new <strong>{{TITLE}}</strong>.</p>
 
   <p>Your account is now active:</p>
   <ul>
