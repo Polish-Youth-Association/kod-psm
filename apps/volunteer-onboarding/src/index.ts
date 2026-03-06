@@ -17,10 +17,36 @@ type VolunteerOnboardingPayload = {
   startDate?: string;
   notes?: string;
   suggestedPrimaryEmail?: string;
+  phoneNumber?: string;
+  birthday?: string;
+  title?: string;
 };
 
-function sleep(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+async function waitForWorkspaceUser(directory: any, userId: string) {
+  const timeout = 30000; // 30 seconds max
+  const interval = 2000; // check every 2 seconds
+  const start = Date.now();
+
+  while (true) {
+    try {
+      const res = await directory.users.get({
+        userKey: userId,
+        projection: "full"
+      });
+
+      return res.data; // user is ready
+    } catch (err: any) {
+      if (err.code !== 404) {
+        throw err; // real error
+      }
+
+      if (Date.now() - start > timeout) {
+        throw new Error("Workspace user provisioning timeout");
+      }
+
+      await new Promise((r) => setTimeout(r, interval));
+    }
+  }
 }
 
 function newId() {
@@ -94,11 +120,47 @@ const app = createApp((router) => {
           password: tempPassword,
           changePasswordAtNextLogin: true,
           recoveryEmail: String(body.personalEmail).trim(),
-          orgUnitPath
+          orgUnitPath,
+      
+          ...(body.phoneNumber && String(body.phoneNumber).trim()
+            ? {
+                phones: [
+                  {
+                    type: "mobile",
+                    value: String(body.phoneNumber).trim()
+                  }
+                ]
+              }
+            : {}),
+      
+          ...(body.title && String(body.title).trim()
+            ? {
+                organizations: [
+                  {
+                    title: String(body.title).trim(),
+                    primary: true
+                  }
+                ]
+              }
+            : {}),
+      
+          ...(body.birthday && String(body.birthday).trim()
+            ? (() => {
+                const [y, m, d] = String(body.birthday).trim().split("-").map(Number);
+                if (!y || !m || !d) return {};
+                return {
+                  birthdays: [
+                    {
+                      date: { year: y, month: m, day: d }
+                    }
+                  ]
+                };
+              })()
+            : {})
         }
       });
 
-      await sleep(10_000);
+      await waitForWorkspaceUser(directory, primaryEmail);
 
       const createdEmail = created.data.primaryEmail || primaryEmail;
 
@@ -110,6 +172,7 @@ const app = createApp((router) => {
           firstName: String(body.firstName).trim(),
           lastName: String(body.lastName).trim(),
           email: createdEmail,
+          title: String(body.title).trim()
         });
 
         await setGmailSignatureForUser({
@@ -132,19 +195,17 @@ const app = createApp((router) => {
         await sendOnboardingEmail({
           toPersonalEmail: String(body.personalEmail).trim(),
           firstName: String(body.firstName).trim(),
-          team: String(body.team).trim(),
+          title: String(body.title).trim(),
           polishYouthEmail: createdEmail,
           tempPassword,
           slackInviteLink,
           htmlTemplate: ONBOARDING_TEMPLATE_HTML
         });
         
-        await sleep(10_000);
-
         await sendOnboardingEmail({
           toPersonalEmail: createdEmail,
           firstName: String(body.firstName).trim(),
-          team: String(body.team).trim(),
+          title: String(body.title).trim(),
           polishYouthEmail: createdEmail,
           tempPassword: "—",
           slackInviteLink,

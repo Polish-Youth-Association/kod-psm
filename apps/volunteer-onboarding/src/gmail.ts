@@ -19,7 +19,7 @@ function renderTemplate(html: string, vars: Record<string, string>) {
 export async function sendOnboardingEmail(args: {
   toPersonalEmail: string;
   firstName: string;
-  team: string;
+  title: string;
   polishYouthEmail: string;
   tempPassword: string;
   htmlTemplate: string;
@@ -38,11 +38,11 @@ export async function sendOnboardingEmail(args: {
   const gmail = google.gmail({ version: "v1", auth });
 
   const subject =
-    args.subject?.trim() || `Welcome to the Polish Youth Association <${args.team}> Team`;
+    args.subject?.trim() || `Welcome to the Polish Youth Association Volunteer Team!`;
 
   const html = renderTemplate(args.htmlTemplate, {
     FIRST_NAME: args.firstName,
-    TEAM: args.team,
+    TITLE: args.title,
     POLISH_YOUTH_EMAIL: args.polishYouthEmail,
     TEMP_PASSWORD: args.tempPassword
   });
