@@ -11,7 +11,7 @@ env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_PROD }}
   IMAGE_REPO: apps
   REGION: us-central1
- # ALLOW_SA_CREATE: "false"
+  ALLOW_SA_CREATE: "false"
 
 jobs:
   deploy:
