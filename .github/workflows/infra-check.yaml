@@ -23,6 +23,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug GitHub context
+        run: |
+          echo "repository=${{ github.repository }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "event_name=${{ github.event_name }}"
+          echo "workflow=${{ github.workflow }}"
+          echo "actor=${{ github.actor }}"
+
       - name: Authenticate to GCP (WIF)
         uses: google-github-actions/auth@v2
         with:
