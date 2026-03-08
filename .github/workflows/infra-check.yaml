@@ -137,6 +137,14 @@ jobs:
             ' "$yaml_path" || true
           }
 
+          echo "Resolved IAM file path: ${IAM_FILE:-<none>}"
+          if [ -n "${IAM_FILE:-}" ]; then
+            ls -l "$IAM_FILE" || true
+            echo "----- iam file contents -----"
+            cat "$IAM_FILE" || true
+            echo "-----------------------------"
+          fi
+
           # Reads an iam manifest yaml and extracts "serviceAccount:" value
           # Also replaces literal "PROJECT_ID" with actual project id (matches your old Node behavior)
           get_service_account_from_iam_file() {
