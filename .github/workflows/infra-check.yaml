@@ -32,6 +32,11 @@ jobs:
           echo "workflow=${{ github.workflow }}"
           echo "actor=${{ github.actor }}"
 
+      - name: Debug PR context
+        run: |
+          echo "base_ref=${{ github.base_ref }}"
+          echo "head_ref=${{ github.head_ref }}"
+      
       - name: Authenticate to GCP (WIF)
         uses: google-github-actions/auth@v2
         with:
