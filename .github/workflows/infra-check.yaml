@@ -110,37 +110,39 @@ jobs:
           get_iam_file_for_app() {
             local app_id="$1"
             local yaml_path="infra/apps.yaml"
-
+          
             if [ ! -f "$yaml_path" ]; then
               echo ""
               return 0
             fi
-
+          
             awk -v app="$app_id" '
-              function trim(s){ gsub(/^[ \t]+|[ \t]+$/,"",s); return s }
+              function trim(s){ gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
               {
-                line=$0
-                sub(/^[ \t]*/,"",line)
+                line = $0
+                sub(/^[ \t]*/, "", line)
+          
                 # Match list entry id line: "- id: app"
                 if (line ~ /^-+[ \t]*id:[ \t]*/) {
-                  id=line
-                  sub(/^-+[ \t]*id:[ \t]*/,"",id)
-                  id=trim(id)
-                  gsub(/^"|"$/,"",id)
-                  in=(id==app)
+                  id = line
+                  sub(/^-+[ \t]*id:[ \t]*/, "", id)
+                  id = trim(id)
+                  gsub(/^"|"$/, "", id)
+                  in_app = (id == app)
                   next
                 }
+          
                 # If inside matching app block, grab iam_file
-                if (in && line ~ /^iam_file:[ \t]*/) {
-                  f=line
-                  sub(/^iam_file:[ \t]*/,"",f)
-                  f=trim(f)
-                  gsub(/^"|"$/,"",f)
+                if (in_app && line ~ /^iam_file:[ \t]*/) {
+                  f = line
+                  sub(/^iam_file:[ \t]*/, "", f)
+                  f = trim(f)
+                  gsub(/^"|"$/, "", f)
                   print f
                   exit
                 }
               }
-            ' "$yaml_path" || true
+            ' "$yaml_path"
           }
 
           # Reads an iam manifest yaml and extracts "serviceAccount:" value
@@ -259,6 +261,14 @@ jobs:
               echo "No service account declared for $APP (or iam_file missing). Skipping SA creation + secret binding."
             fi
           done
+
+          echo "Resolved IAM file path: ${IAM_FILE:-<none>}"
+          if [ -n "${IAM_FILE:-}" ]; then
+            ls -l "$IAM_FILE" || true
+            echo "----- iam file contents -----"
+            cat "$IAM_FILE" || true
+            echo "-----------------------------"
+          fi
 
           echo "✅ Infra check completed successfully."
 
