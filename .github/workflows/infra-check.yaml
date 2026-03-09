@@ -36,6 +36,12 @@ jobs:
         run: |
           echo "base_ref=${{ github.base_ref }}"
           echo "head_ref=${{ github.head_ref }}"
+
+      - name: Debug workspace
+        run: |
+          pwd
+          ls -la
+          find . -maxdepth 3 -type f | sort
       
       - name: Authenticate to GCP (WIF)
         uses: google-github-actions/auth@v2
