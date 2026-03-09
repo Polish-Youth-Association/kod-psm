@@ -222,6 +222,14 @@ jobs:
             IAM_FILE="$(get_iam_file_for_app "$APP")"
             echo "iam_file from infra/apps.yaml: ${IAM_FILE:-<none>}"
 
+            if [ -n "${IAM_FILE:-}" ]; then
+              echo "Resolved IAM file path: $IAM_FILE"
+              ls -l "$IAM_FILE" || true
+              echo "----- iam file contents -----"
+              cat "$IAM_FILE" || true
+              echo "-----------------------------"
+            fi
+
             SERVICE_ACCOUNT="$(get_service_account_from_iam_file "${IAM_FILE:-}" "$PROJECT")"
 
             if [ -n "${SERVICE_ACCOUNT:-}" ]; then
