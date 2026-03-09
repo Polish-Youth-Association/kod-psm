@@ -131,7 +131,7 @@ jobs:
                   next
                 }
                 # If inside matching app block, grab iam_file
-                if (in && line ~ /^iam_file:[ \t]*/) {
+                if (in_app && line ~ /^iam_file:[ \t]*/) {
                   f=line
                   sub(/^iam_file:[ \t]*/,"",f)
                   f=trim(f)
