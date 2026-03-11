@@ -1,0 +1,217 @@
+name: Security Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+  security-events: write  # Required to upload SARIF to GitHub Security tab
+  actions: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # 1. SECRET DETECTION — Gitleaks
+  #    Scans full git history for hardcoded secrets, API keys, tokens.
+  # ─────────────────────────────────────────────────────────────────
+  secret-detection:
+    name: 🔐 Secret Detection (Gitleaks)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Report only — non-blocking
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history required by Gitleaks
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          # ↑ Uncomment if running on a private org repo (requires paid Gitleaks license)
+
+  # ─────────────────────────────────────────────────────────────────
+  # 2. DEPENDENCY VULNERABILITIES — pnpm audit
+  #    Audits the full workspace for known CVEs in npm dependencies.
+  #    Report saved as a downloadable Actions artifact.
+  # ─────────────────────────────────────────────────────────────────
+  dependency-audit:
+    name: 📦 Dependency Audit (pnpm audit)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Report only — non-blocking
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run pnpm audit
+        run: pnpm audit --audit-level=moderate 2>&1 | tee audit-report.txt
+        continue-on-error: true
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit-report
+          path: audit-report.txt
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # 3. STATIC CODE ANALYSIS — CodeQL (SAST)
+  #    GitHub's native SAST engine for TypeScript/JavaScript.
+  #    Detects injection flaws, insecure patterns, logic bugs.
+  #    Results appear in the repo's Security → Code scanning tab.
+  # ─────────────────────────────────────────────────────────────────
+  sast-codeql:
+    name: 🔬 SAST (CodeQL)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Report only — non-blocking
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # Uncomment for stricter checks beyond the default query suite:
+          # queries: security-extended
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all apps
+        # CodeQL benefits from a compiled build for better analysis accuracy
+        run: pnpm --filter "./apps/*" run build --if-present
+        continue-on-error: true  # Don't block analysis if one app fails to build
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  # ─────────────────────────────────────────────────────────────────
+  # 4. CONTAINER IMAGE SCANNING — Trivy
+  #    Builds each changed app's Docker image and scans it for CVEs
+  #    in OS packages and language-level dependencies.
+  #    Only apps with changed files are scanned (mirrors deploy logic).
+  #    SARIF results upload to GitHub Security → Code scanning tab.
+  # ─────────────────────────────────────────────────────────────────
+  detect-changed-apps:
+    name: 🔍 Detect Changed Apps
+    runs-on: ubuntu-latest
+    outputs:
+      changed_apps: ${{ steps.detect.outputs.changed_apps }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed apps/
+        id: detect
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD \
+            | grep '^apps/' \
+            | cut -d/ -f1-2 \
+            | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "changed_apps=$CHANGED" >> $GITHUB_OUTPUT
+          echo "Detected changed apps: $CHANGED"
+
+  container-scan:
+    name: 🐳 Container Scan — ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    needs: detect-changed-apps
+    if: needs.detect-changed-apps.outputs.changed_apps != '[]'
+    continue-on-error: true  # Report only — non-blocking
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.detect-changed-apps.outputs.changed_apps) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Derive app name
+        id: meta
+        run: |
+          APP_NAME=$(basename "${{ matrix.app }}")
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "image=kod-psm/$APP_NAME:security-scan" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "${{ steps.meta.outputs.image }}" \
+            "./${{ matrix.app }}"
+
+      - name: Run Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.image }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: '0'  # Never fail — report only
+
+      - name: Upload Trivy SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-${{ steps.meta.outputs.app_name }}
+
+  # ─────────────────────────────────────────────────────────────────
+  # 5. SECURITY SUMMARY
+  #    Writes a Markdown summary to the Actions run page so the
+  #    team gets a one-glance overview after every push to dev.
+  # ─────────────────────────────────────────────────────────────────
+  security-summary:
+    name: 📋 Security Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - secret-detection
+      - dependency-audit
+      - sast-codeql
+      - container-scan
+    steps:
+      - name: Write job summary
+        run: |
+          echo "## 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔐 Secret Detection (Gitleaks) | \`${{ needs.secret-detection.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 Dependency Audit (pnpm audit) | \`${{ needs.dependency-audit.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔬 SAST — CodeQL | \`${{ needs.sast-codeql.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐳 Container Scan (Trivy) | \`${{ needs.container-scan.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> ℹ️ All checks are **report-only** (non-blocking). Review findings in the **Security** tab → **Code scanning**." >> $GITHUB_STEP_SUMMARY
