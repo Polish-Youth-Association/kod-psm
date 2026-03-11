@@ -72,49 +72,62 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
-  # 3. STATIC CODE ANALYSIS — CodeQL (SAST)
-  #    GitHub's native SAST engine for TypeScript/JavaScript.
-  #    Detects injection flaws, insecure patterns, logic bugs.
-  #    Results appear in the repo's Security → Code scanning tab.
+  # 3. STATIC CODE ANALYSIS — Semgrep OSS (SAST)
+  #    100% free, no GitHub Advanced Security required.
+  #    Detects injection flaws, insecure patterns, and logic bugs
+  #    in TypeScript/JavaScript using the official security ruleset.
+  #    Results saved as a downloadable Actions artifact.
+  #
+  #    NOTE: CodeQL was removed because uploading SARIF to GitHub's
+  #    Security tab requires GitHub Advanced Security (paid) on
+  #    private repos. Semgrep OSS runs entirely within CI with no
+  #    external service or account needed.
   # ─────────────────────────────────────────────────────────────────
-  sast-codeql:
-    name: 🔬 SAST (CodeQL)
+  sast-semgrep:
+    name: 🔬 SAST (Semgrep OSS)
     runs-on: ubuntu-latest
     continue-on-error: true  # Report only — non-blocking
+    container:
+      image: semgrep/semgrep
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+      - name: Run Semgrep OSS
+        run: |
+          semgrep ci \
+            --config "p/typescript" \
+            --config "p/secrets" \
+            --config "p/nodejs" \
+            --config "p/owasp-top-ten" \
+            --json \
+            --output semgrep-report.json \
+            --no-suppress-errors \
+            || true  # Never fail — report only
+        env:
+          # No SEMGREP_APP_TOKEN needed — OSS mode runs fully offline
+          SEMGREP_SEND_METRICS: "off"
+
+      - name: Print Semgrep summary
+        if: always()
+        run: |
+          if [ -f semgrep-report.json ]; then
+            TOTAL=$(jq '.results | length' semgrep-report.json)
+            echo "### Semgrep found $TOTAL issue(s)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            jq -r '
+              .results[] |
+              "- **\(.check_id)** in `\(.path)` line \(.start.line): \(.extra.message)"
+            ' semgrep-report.json >> $GITHUB_STEP_SUMMARY || true
+          fi
+
+      - name: Upload Semgrep report
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          languages: javascript-typescript
-          # Uncomment for stricter checks beyond the default query suite:
-          # queries: security-extended
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: latest
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build all apps
-        # CodeQL benefits from a compiled build for better analysis accuracy
-        run: pnpm --filter "./apps/*" run build --if-present
-        continue-on-error: true  # Don't block analysis if one app fails to build
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:javascript-typescript"
+          name: semgrep-sast-report
+          path: semgrep-report.json
+          retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
   # 4. CONTAINER IMAGE SCANNING — Trivy
@@ -132,16 +145,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0  # Full history needed for reliable diffing
 
       - name: Detect changed apps/
         id: detect
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD \
-            | grep '^apps/' \
-            | cut -d/ -f1-2 \
-            | sort -u \
-            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          # Use GitHub's push event before/after SHAs for accurate diffing.
+          # Falls back to scanning all apps if this is the very first push
+          # (before SHA is a string of zeroes) or if the base is unavailable.
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+
+          # Check if BEFORE is a real commit (not the null SHA on first push)
+          if git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "Diffing $BEFORE..$AFTER"
+            CHANGED=$(git diff --name-only "$BEFORE" "$AFTER" \
+              | grep '^apps/' \
+              | cut -d/ -f1-2 \
+              | sort -u \
+              | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          else
+            echo "No valid base commit — scanning all apps (first push or force push)"
+            CHANGED=$(find apps -mindepth 1 -maxdepth 1 -type d \
+              | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          fi
+
           echo "changed_apps=$CHANGED" >> $GITHUB_OUTPUT
           echo "Detected changed apps: $CHANGED"
 
@@ -200,7 +228,7 @@ jobs:
     needs:
       - secret-detection
       - dependency-audit
-      - sast-codeql
+      - sast-semgrep
       - container-scan
     steps:
       - name: Write job summary
@@ -211,7 +239,7 @@ jobs:
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| 🔐 Secret Detection (Gitleaks) | \`${{ needs.secret-detection.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 📦 Dependency Audit (pnpm audit) | \`${{ needs.dependency-audit.result }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔬 SAST — CodeQL | \`${{ needs.sast-codeql.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔬 SAST — Semgrep OSS | \`${{ needs.sast-semgrep.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 🐳 Container Scan (Trivy) | \`${{ needs.container-scan.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> ℹ️ All checks are **report-only** (non-blocking). Review findings in the **Security** tab → **Code scanning**." >> $GITHUB_STEP_SUMMARY
