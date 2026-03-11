@@ -1,8 +1,0 @@
-.navLink {
-    transition: background-color 240ms ease, color 240ms ease;
-}
-
-.navLink:hover {
-    background-color: rgb(232, 232, 232);
-    color: rgb(0, 0, 0);
-}
