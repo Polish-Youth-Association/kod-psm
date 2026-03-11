@@ -131,90 +131,74 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────
   # 4. CONTAINER IMAGE SCANNING — Trivy
-  #    Builds each changed app's Docker image and scans it for CVEs
-  #    in OS packages and language-level dependencies.
-  #    Only apps with changed files are scanned (mirrors deploy logic).
-  #    SARIF results upload to GitHub Security → Code scanning tab.
+  #    Scans every app in apps/ on every push to dev.
+  #    Builds each Dockerfile locally, runs Trivy, and saves a
+  #    per-app JSON report as a downloadable Actions artifact.
   # ─────────────────────────────────────────────────────────────────
-  detect-changed-apps:
-    name: 🔍 Detect Changed Apps
-    runs-on: ubuntu-latest
-    outputs:
-      changed_apps: ${{ steps.detect.outputs.changed_apps }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Full history needed for reliable diffing
-
-      - name: Detect changed apps/
-        id: detect
-        run: |
-          # Use GitHub's push event before/after SHAs for accurate diffing.
-          # Falls back to scanning all apps if this is the very first push
-          # (before SHA is a string of zeroes) or if the base is unavailable.
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.event.after }}"
-
-          # Check if BEFORE is a real commit (not the null SHA on first push)
-          if git cat-file -e "$BEFORE" 2>/dev/null; then
-            echo "Diffing $BEFORE..$AFTER"
-            CHANGED=$(git diff --name-only "$BEFORE" "$AFTER" \
-              | grep '^apps/' \
-              | cut -d/ -f1-2 \
-              | sort -u \
-              | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          else
-            echo "No valid base commit — scanning all apps (first push or force push)"
-            CHANGED=$(find apps -mindepth 1 -maxdepth 1 -type d \
-              | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          fi
-
-          echo "changed_apps=$CHANGED" >> $GITHUB_OUTPUT
-          echo "Detected changed apps: $CHANGED"
-
   container-scan:
-    name: 🐳 Container Scan — ${{ matrix.app }}
+    name: 🐳 Container Scan (all apps)
     runs-on: ubuntu-latest
-    needs: detect-changed-apps
-    if: needs.detect-changed-apps.outputs.changed_apps != '[]'
     continue-on-error: true  # Report only — non-blocking
-    strategy:
-      fail-fast: false
-      matrix:
-        app: ${{ fromJson(needs.detect-changed-apps.outputs.changed_apps) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Derive app name
-        id: meta
+      - name: Scan all app containers with Trivy
         run: |
-          APP_NAME=$(basename "${{ matrix.app }}")
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
-          echo "image=kod-psm/$APP_NAME:security-scan" >> $GITHUB_OUTPUT
+          for APP_DIR in apps/*/; do
+            APP_NAME=$(basename "$APP_DIR")
 
-      - name: Build Docker image
+            if [ ! -f "$APP_DIR/Dockerfile" ]; then
+              echo "⚠️  Skipping $APP_NAME — no Dockerfile found"
+              continue
+            fi
+
+            echo "🐳 Building image for: $APP_NAME"
+            IMAGE="kod-psm/$APP_NAME:security-scan"
+
+            docker build -t "$IMAGE" "$APP_DIR" || {
+              echo "❌ Docker build failed for $APP_NAME"
+              continue
+            }
+
+            echo "🔍 Scanning $APP_NAME with Trivy..."
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v "$PWD":/output \
+              aquasec/trivy:latest image \
+                --format json \
+                --output "/output/trivy-$APP_NAME.json" \
+                --severity CRITICAL,HIGH,MEDIUM \
+                --exit-code 0 \
+                "$IMAGE"
+
+            TOTAL=$(jq '[.Results[]?.Vulnerabilities // [] | .[]] | length' "trivy-$APP_NAME.json" 2>/dev/null || echo "?")
+            echo "📋 $APP_NAME: $TOTAL vulnerability/ies found"
+          done
+
+      - name: Write container scan summary
+        if: always()
         run: |
-          docker build \
-            -t "${{ steps.meta.outputs.image }}" \
-            "./${{ matrix.app }}"
+          echo "### 🐳 Container Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| App | Critical | High | Medium |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|----------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          for REPORT in trivy-*.json; do
+            [ -f "$REPORT" ] || continue
+            APP=$(echo "$REPORT" | sed 's/trivy-//;s/\.json//')
+            CRITICAL=$(jq '[.Results[]?.Vulnerabilities // [] | .[] | select(.Severity=="CRITICAL")] | length' "$REPORT" 2>/dev/null || echo "?")
+            HIGH=$(jq '[.Results[]?.Vulnerabilities // [] | .[] | select(.Severity=="HIGH")] | length' "$REPORT" 2>/dev/null || echo "?")
+            MEDIUM=$(jq '[.Results[]?.Vulnerabilities // [] | .[] | select(.Severity=="MEDIUM")] | length' "$REPORT" 2>/dev/null || echo "?")
+            echo "| \`$APP\` | $CRITICAL | $HIGH | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
+          done
 
-      - name: Run Trivy container scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ steps.meta.outputs.image }}
-          format: sarif
-          output: trivy-results.sarif
-          severity: CRITICAL,HIGH,MEDIUM
-          exit-code: '0'  # Never fail — report only
-
-      - name: Upload Trivy SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload Trivy reports
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          sarif_file: trivy-results.sarif
-          category: trivy-${{ steps.meta.outputs.app_name }}
+          name: trivy-container-reports
+          path: trivy-*.json
+          retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
   # 5. SECURITY SUMMARY
