@@ -4,11 +4,11 @@ name: Deploy Apps to Cloud Run
 on:
   push:
     branches:
-      - prod
+      - dev
 
 env:
   GCP_REGION: us-central1
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_PROD }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_DEV }}
   IMAGE_REPO: apps
   REGION: us-central1
   ALLOW_SA_CREATE: true
@@ -29,8 +29,8 @@ jobs:
       - name: Authenticate to GCP (WIF)
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_PROD }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_PROD }}
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_DEV }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_DEV }}
           token_format: "access_token"
           access_token_lifetime: "3600s"
 
