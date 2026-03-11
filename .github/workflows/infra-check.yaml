@@ -121,11 +121,11 @@ jobs:
                   sub(/^-+[ \t]*id:[ \t]*/,"",id)
                   id=trim(id)
                   gsub(/^"|"$/,"",id)
-                  in=(id==app)
+                  in_app=(id==app)
                   next
                 }
                 # If inside matching app block, grab iam_file
-                if (in && line ~ /^iam_file:[ \t]*/) {
+                if (in_app && line ~ /^iam_file:[ \t]*/) {
                   f=line
                   sub(/^iam_file:[ \t]*/,"",f)
                   f=trim(f)
