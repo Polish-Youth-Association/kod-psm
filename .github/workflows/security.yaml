@@ -200,8 +200,110 @@ jobs:
           path: trivy-*.json
           retention-days: 30
 
+
   # ─────────────────────────────────────────────────────────────────
-  # 5. SECURITY SUMMARY
+  # 5. INFRASTRUCTURE AS CODE — Trivy IaC scan
+  #    Scans infra/ for Cloud Run and Cloud Build misconfigurations:
+  #    overly permissive IAM, missing resource limits, insecure
+  #    settings, and exposed ports. Uses Trivy (already in pipeline).
+  # ─────────────────────────────────────────────────────────────────
+  iac-scan:
+    name: 🏗️ IaC Scan (Trivy)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Report only — non-blocking
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy IaC scan on infra/
+        run: |
+          docker run --rm \
+            -v "$PWD":/project \
+            aquasec/trivy:latest config \
+              --format json \
+              --output /project/trivy-iac-report.json \
+              --severity CRITICAL,HIGH,MEDIUM \
+              --exit-code 0 \
+              /project/infra
+
+          TOTAL=$(jq '[.Results[]?.Misconfigurations // [] | .[]] | length' trivy-iac-report.json 2>/dev/null || echo "?")
+          echo "📋 IaC scan complete: $TOTAL misconfiguration(s) found"
+
+      - name: Write IaC summary
+        if: always()
+        run: |
+          echo "### 🏗️ IaC Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f trivy-iac-report.json ]; then
+            echo "| File | ID | Severity | Title |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|----|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            jq -r '
+              .Results[]? |
+              .Target as $file |
+              .Misconfigurations[]? |
+              "| `\($file)` | \(.ID) | \(.Severity) | \(.Title) |"
+            ' trivy-iac-report.json >> $GITHUB_STEP_SUMMARY || true
+          fi
+
+      - name: Upload IaC report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-iac-report
+          path: trivy-iac-report.json
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # 6. GITHUB ACTIONS WORKFLOW HARDENING — zizmor
+  #    Audits all .github/workflows/*.yaml files for common security
+  #    issues: script injection via untrusted inputs, overly broad
+  #    permissions, unpinned action versions, and dangerous patterns
+  #    that could allow workflow compromise.
+  # ─────────────────────────────────────────────────────────────────
+  workflow-hardening:
+    name: ⚙️ Workflow Hardening (zizmor)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Report only — non-blocking
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install zizmor
+        run: pip install zizmor --quiet
+
+      - name: Run zizmor on all workflows
+        run: |
+          zizmor \
+            --format plain \
+            --no-exit-codes \
+            .github/workflows/ 2>&1 | tee zizmor-report.txt || true
+
+          TOTAL=$(grep -c '^\[' zizmor-report.txt 2>/dev/null || echo "0")
+          echo "📋 zizmor complete: $TOTAL issue(s) found"
+
+      - name: Write workflow hardening summary
+        if: always()
+        run: |
+          echo "### ⚙️ Workflow Hardening Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -s zizmor-report.txt ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat zizmor-report.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No issues found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload zizmor report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zizmor-workflow-report
+          path: zizmor-report.txt
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # 7. SECURITY SUMMARY
   #    Writes a Markdown summary to the Actions run page so the
   #    team gets a one-glance overview after every push to dev.
   # ─────────────────────────────────────────────────────────────────
@@ -214,6 +316,8 @@ jobs:
       - dependency-audit
       - sast-semgrep
       - container-scan
+      - iac-scan
+      - workflow-hardening
     steps:
       - name: Write job summary
         run: |
@@ -225,5 +329,7 @@ jobs:
           echo "| 📦 Dependency Audit (pnpm audit) | \`${{ needs.dependency-audit.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔬 SAST — Semgrep OSS | \`${{ needs.sast-semgrep.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 🐳 Container Scan (Trivy) | \`${{ needs.container-scan.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏗️ IaC Scan (Trivy) | \`${{ needs.iac-scan.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚙️ Workflow Hardening (zizmor) | \`${{ needs.workflow-hardening.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> ℹ️ All checks are **report-only** (non-blocking). Review findings in the **Security** tab → **Code scanning**." >> $GITHUB_STEP_SUMMARY
