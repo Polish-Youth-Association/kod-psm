@@ -13,6 +13,7 @@ apps:
     region: "us-central1"
     artifact_repo: "member-onboarding"
     secret_prefix: "member-onboarding"
+    iam_file: "apps/member-onboarding/iam.yaml"
     secrets: []
   - id: certificate-generator
     name: "Certificate-Generator"
@@ -20,6 +21,7 @@ apps:
     region: "us-central1"
     artifact_repo: "certificate-generator"
     secret_prefix: "certificate-generator"
+    iam_file: "apps/certificate-generator/iam.yaml"
     secrets: []
   - id: example2
     name: "example2"
@@ -28,6 +30,14 @@ apps:
     artifact_repo: "example2"
     secret_prefix: "example2"
     iam_file: "apps/example2/iam.yaml"
+    secrets: []
+  - id: persist-member
+    name: "persist-member"
+    path: "apps/persist-member"
+    region: "us-central1"
+    artifact_repo: "persist-member"
+    secret_prefix: "persist-member"
+    iam_file: "apps/persist-member/iam.yaml"
     secrets: []
   - id: volunteer-onboarding
     name: "volunteer-onboarding"
