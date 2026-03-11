@@ -1,26 +1,31 @@
 FROM node:22-slim AS builder
-  WORKDIR /repo
+WORKDIR /repo
 
-  RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
-  COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-  COPY libs ./libs
-  COPY apps/example2 ./apps/example2
+# workspace + root TS configs (needed because libs/* tsconfig extends them)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY tsconfig.base.json tsconfig.json ./
 
-  RUN pnpm install --frozen-lockfile --filter "@kod-psm/example2..."
-  RUN pnpm -r --filter "@kod-psm/example2..." run build
+# code
+COPY libs ./libs
+COPY apps/example2 ./apps/example2
 
-  # produce self-contained output
-  RUN pnpm --filter "@kod-psm/example2" deploy --prod --legacy /out
+# install deps needed for this slice of the monorepo
+RUN pnpm install --frozen-lockfile --filter "@kod-psm/example2..."
 
-  FROM node:22-slim AS runtime
-  WORKDIR /app
-  ENV NODE_ENV=production
-  ENV PORT=8080
-  EXPOSE 8080
+# build service + its deps (http-helpers)
+RUN pnpm -r --filter "@kod-psm/example2..." run build
 
-  # run the deployed bundle
-  COPY --from=builder /out ./
+# produce a self-contained production output
+RUN pnpm --filter "@kod-psm/example2" deploy --prod --legacy /out
 
-  CMD ["node", "dist/index.js"]
-  
+FROM node:22-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=8080
+EXPOSE 8080
+
+COPY --from=builder /out ./
+
+CMD ["node", "dist/index.js"]
