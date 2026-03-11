@@ -3,11 +3,11 @@ name: Infra Check
 on:
   pull_request:
     branches:
-      - main
+      - dev
 
 env:
   GCP_REGION: us-central1
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_DEV }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_dev }}
   IMAGE_REPO: apps
 
 jobs:
@@ -23,6 +23,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug GitHub context
+        run: |
+          echo "repository=${{ github.repository }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "event_name=${{ github.event_name }}"
+          echo "workflow=${{ github.workflow }}"
+          echo "actor=${{ github.actor }}"
+
+      - name: Debug PR context
+        run: |
+          echo "base_ref=${{ github.base_ref }}"
+          echo "head_ref=${{ github.head_ref }}"
+      
       - name: Authenticate to GCP (WIF)
         uses: google-github-actions/auth@v2
         with:

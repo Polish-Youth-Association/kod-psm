@@ -3,8 +3,5 @@ roles:
   - roles/run.invoker
   - roles/storage.objectViewer
 
-resources:
-  - type: storage.bucket
-    name: gs://example-bucket-iam
-    roles:
-      - roles/storage.objectViewer
+resources: []
+

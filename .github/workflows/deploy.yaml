@@ -4,14 +4,14 @@ name: Deploy Apps to Cloud Run
 on:
   push:
     branches:
-      - main
+      - dev
 
 env:
   GCP_REGION: us-central1
-  # Using your existing "DEV" secrets; rename if you want.
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_DEV }}
   IMAGE_REPO: apps
   REGION: us-central1
+  ALLOW_SA_CREATE: true
 
 jobs:
   deploy:
@@ -94,14 +94,12 @@ jobs:
 
             SERVICE="$APP"
             IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
-          
+
             echo "::group::Building image for $APP"
-          
             gcloud builds submit . \
               --project="$GCP_PROJECT_ID" \
               --config=infra/cloudbuild.docker.yaml \
               --substitutions=_APP="$APP",_IMAGE="$IMAGE"
-          
             echo "::endgroup::"
 
             echo "::group::Deploying $SERVICE to Cloud Run"
@@ -109,17 +107,16 @@ jobs:
               --image="$IMAGE" \
               --region="$GCP_REGION" \
               --platform=managed \
-              --project="$GCP_PROJECT_ID" \
+              --project="$GCP_PROJECT_ID"
+            echo "::endgroup::"
 
-            echo "=== Wiring IAP + domain access for $SERVICE ==="
-
+            echo "::group::Wiring domain access for $SERVICE"
             gcloud run services add-iam-policy-binding "$SERVICE" \
               --region "$REGION" \
               --member="domain:polishyouth.org" \
               --role="roles/run.invoker" \
               --project="$GCP_PROJECT_ID" \
               --quiet
-            
             echo "::endgroup::"
           done
 
