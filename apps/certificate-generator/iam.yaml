@@ -1,0 +1,6 @@
+serviceAccount: certificate-generator-svc@PROJECT_ID.iam.gserviceaccount.com
+roles:
+  - roles/run.invoker
+
+resources: []
+
