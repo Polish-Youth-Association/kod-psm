@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
-const nextConfig: NextConfig = { 
+import path from "path";
+
+const nextConfig: NextConfig = {
   output: "standalone",
+  turbopack: {
+    root: path.resolve(__dirname, "../..")
+  },
   images: {
     remotePatterns: [
       {

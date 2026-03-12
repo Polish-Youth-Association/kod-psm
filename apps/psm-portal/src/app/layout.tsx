@@ -14,12 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        style={{
-          fontFamily:
-            'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"'
-        }}
-        >
+      <body className="antialiased bg-white text-brand-dark font-sans">
         <TopNav />
         {children}
       </body>

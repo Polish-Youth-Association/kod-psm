@@ -16,7 +16,6 @@ type VolunteerOnboardingRequest = {
 };
 
 function isEmail(s: string) {
-  // good-enough validation for UI
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 }
 
@@ -25,13 +24,21 @@ function toEmailLocalPart(first: string, last: string) {
     .trim()
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "") // strip accents
-    .replace(/[^a-z0-9.]/g, "") // keep a-z 0-9 .
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9.]/g, "")
     .replace(/\.+/g, ".")
     .replace(/^\.+|\.+$/g, "");
-
   return base || "";
 }
+
+const statusStyles: Record<VolunteerOnboardingRequest["status"], string> = {
+  Draft: "bg-gray-100 text-gray-600",
+  Submitted: "bg-blue-50 text-blue-700",
+  Approved: "bg-green-50 text-green-700",
+  Provisioning: "bg-yellow-50 text-yellow-700",
+  Completed: "bg-emerald-50 text-emerald-700",
+  Rejected: "bg-red-50 text-red-700"
+};
 
 export default function VolunteerOnboardingPage() {
   const [form, setForm] = useState({
@@ -68,41 +75,41 @@ export default function VolunteerOnboardingPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-  
+
     if (!canSubmit) {
       setError("Fill in required fields.");
       return;
     }
-  
+
     setSubmitting(true);
     try {
-        const payload = {
-            firstName: form.firstName.trim(),
-            lastName: form.lastName.trim(),
-            personalEmail: form.personalEmail.trim(),
-            title: form.title.trim(),
-            startDate: form.startDate.trim(),
-            notes: form.notes.trim(),
-            birthday: form.birthday.trim(),
-            phoneNumber: form.phoneNumber.trim(),
-            suggestedPrimaryEmail
-            };
-  
+      const payload = {
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        personalEmail: form.personalEmail.trim(),
+        title: form.title.trim(),
+        startDate: form.startDate.trim(),
+        notes: form.notes.trim(),
+        birthday: form.birthday.trim(),
+        phoneNumber: form.phoneNumber.trim(),
+        suggestedPrimaryEmail
+      };
+
       const resp = await fetch("/api/onboarding/volunteer", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload)
       });
-  
+
       const text = await resp.text();
       let json: any = null;
       try {
         json = JSON.parse(text);
       } catch {}
-  
+
       const result = json;
       if (!result?.ok) throw new Error(result?.error ?? "Backend rejected request");
-      
+
       const record: VolunteerOnboardingRequest = {
         id: result.requestId,
         createdAt: new Date().toISOString(),
@@ -115,9 +122,9 @@ export default function VolunteerOnboardingPage() {
         suggestedPrimaryEmail: payload.suggestedPrimaryEmail,
         status: "Submitted"
       };
-  
+
       setRequests((prev) => [record, ...prev]);
-  
+
       setForm({
         firstName: "",
         lastName: "",
@@ -136,28 +143,24 @@ export default function VolunteerOnboardingPage() {
   }
 
   return (
-    <main style={{ padding: 24 }}>
-      <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 26, margin: 0 }}>Volunteer Onboarding</h1>
-        <p style={{ marginTop: 6, opacity: 0.7, maxWidth: 820 }}>
+    <main className="max-w-5xl mx-auto px-6 py-10">
+      {/* Page header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-brand-dark mb-2">Volunteer Onboarding</h1>
+        <p className="text-brand-gray text-sm max-w-2xl">
           Create a request to onboard a new volunteer. This will eventually automate: Google
-          Workspace account creation (<code>@polishyouth.org</code>), group access, and Slack
-          provisioning.
+          Workspace account creation (<code className="font-mono bg-gray-100 px-1 rounded text-xs">@polishyouth.org</code>),
+          group access, and Slack provisioning.
         </p>
-      </header>
+      </div>
 
-      <section
-        style={{
-          padding: 16,
-          border: "1px solid rgba(0,0,0,0.12)",
-          borderRadius: 12,
-          maxWidth: 900
-        }}
-      >
-        <h2 style={{ fontSize: 16, margin: 0, marginBottom: 12 }}>New request</h2>
+      {/* Form card */}
+      <section className="bg-white border border-brand-border rounded-2xl p-6 mb-8">
+        <h2 className="text-base font-semibold text-brand-dark mb-5">New request</h2>
 
-        <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+        <form onSubmit={submit} className="flex flex-col gap-4">
+          {/* Row: First + Last */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field
               label="First Name *"
               value={form.firstName}
@@ -172,28 +175,29 @@ export default function VolunteerOnboardingPage() {
             />
           </div>
 
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-          <Field
-            label="Birthday *"
-            value={form.birthday}
-            onChange={(v) => setForm((f) => ({ ...f, birthday: v }))}
-            type="date"
-            autoComplete="bday"
-            />
-
+          {/* Row: Birthday + Phone */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field
-            label="Phone number *"
-            value={form.phoneNumber}
-            onChange={(v) => setForm((f) => ({ ...f, phoneNumber: v }))}
-            type="tel"
-            autoComplete="tel"
-            placeholder="+1 929 266 7551"
+              label="Birthday *"
+              value={form.birthday}
+              onChange={(v) => setForm((f) => ({ ...f, birthday: v }))}
+              type="date"
+              autoComplete="bday"
+            />
+            <Field
+              label="Phone Number *"
+              value={form.phoneNumber}
+              onChange={(v) => setForm((f) => ({ ...f, phoneNumber: v }))}
+              type="tel"
+              autoComplete="tel"
+              placeholder="+1 929 266 7551"
             />
           </div>
 
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+          {/* Row: Personal email + Title */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field
-              label="Personal email *"
+              label="Personal Email *"
               value={form.personalEmail}
               onChange={(v) => setForm((f) => ({ ...f, personalEmail: v }))}
               placeholder="name@gmail.com"
@@ -208,30 +212,20 @@ export default function VolunteerOnboardingPage() {
             />
           </div>
 
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+          {/* Row: Start date + Suggested email */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field
-              label="Start date (optional)"
+              label="Start Date (optional)"
               value={form.startDate}
               onChange={(v) => setForm((f) => ({ ...f, startDate: v }))}
               type="date"
             />
-
-            <label style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontSize: 12, opacity: 0.75 }}>Suggested PSM email</span>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                Suggested PSM Email
+              </span>
               <div
-                style={{
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "0 10px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  background: "rgba(0,0,0,0.02)",
-                  fontSize: 13,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
-                }}
+                className="h-10 flex items-center px-3 rounded-lg border border-brand-border bg-gray-50 text-sm text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap"
                 title={suggestedPrimaryEmail || ""}
               >
                 {suggestedPrimaryEmail || "—"}
@@ -239,54 +233,48 @@ export default function VolunteerOnboardingPage() {
             </label>
           </div>
 
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.75 }}>Notes (optional)</span>
+          {/* Notes */}
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Notes (optional)
+            </span>
             <textarea
               value={form.notes}
               placeholder="Anything the admin should know..."
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
               rows={4}
-              style={{
-                padding: 10,
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.2)",
-                resize: "vertical"
-              }}
+              className="px-3 py-2 rounded-lg border border-brand-border text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red"
             />
           </label>
 
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {/* Submit row */}
+          <div className="flex items-center gap-4 pt-1">
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              style={{
-                height: 38,
-                padding: "0 14px",
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.2)",
-                background: submitting ? "rgba(0,0,0,0.05)" : "white",
-                cursor: !canSubmit || submitting ? "not-allowed" : "pointer"
-              }}
+              className="px-5 py-2.5 rounded-lg bg-brand-red text-white text-sm font-semibold hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? "Submitting..." : "Submit request"}
             </button>
-
-            <span style={{ fontSize: 12, opacity: 0.7 }}>* required</span>
+            <span className="text-xs text-brand-gray">* required</span>
           </div>
 
-          {error ? (
-            <p style={{ margin: 0, color: "crimson", whiteSpace: "pre-wrap" }}>{error}</p>
-          ) : null}
+          {error && (
+            <p className="text-sm text-red-600 whitespace-pre-wrap">{error}</p>
+          )}
         </form>
       </section>
 
-      <section style={{ marginTop: 22 }}>
-        <h2 style={{ fontSize: 16, margin: 0 }}>Recent requests</h2>
+      {/* Recent requests */}
+      <section className="bg-white border border-brand-border rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-brand-border">
+          <h2 className="text-base font-semibold text-brand-dark">Recent requests</h2>
+        </div>
 
-        <div style={{ marginTop: 10, overflowX: "auto" }}>
-          <table style={{ borderCollapse: "collapse", minWidth: 1120 }}>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse min-w-[1100px]">
             <thead>
-              <tr>
+              <tr className="bg-gray-50">
                 {[
                   "Created",
                   "Request ID",
@@ -299,13 +287,7 @@ export default function VolunteerOnboardingPage() {
                 ].map((h) => (
                   <th
                     key={h}
-                    style={{
-                      textAlign: "left",
-                      fontSize: 12,
-                      padding: "8px 10px",
-                      borderBottom: "1px solid rgba(0,0,0,0.15)",
-                      opacity: 0.7
-                    }}
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-brand-border"
                   >
                     {h}
                   </th>
@@ -315,23 +297,41 @@ export default function VolunteerOnboardingPage() {
             <tbody>
               {requests.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: 12, opacity: 0.7 }}>
-                    No requests yet.
+                  <td colSpan={8} className="px-4 py-8 text-sm text-brand-gray text-center">
+                    No requests yet. Submit a request above to get started.
                   </td>
                 </tr>
               ) : (
                 requests.map((r) => (
-                  <tr key={r.id}>
-                    <td style={cellStyle}>{new Date(r.createdAt).toLocaleString()}</td>
-                    <td style={cellStyle}>{r.id}</td>
-                    <td style={cellStyle}>
+                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
+                      {new Date(r.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-mono text-brand-gray border-b border-brand-border whitespace-nowrap">
+                      {r.id}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap font-medium">
                       {r.firstName} {r.lastName}
                     </td>
-                    <td style={cellStyle}>{r.personalEmail}</td>
-                    <td style={cellStyle}>{r.title}</td>
-                    <td style={cellStyle}>{r.startDate || ""}</td>
-                    <td style={cellStyle}>{r.suggestedPrimaryEmail}</td>
-                    <td style={cellStyle}>{r.status}</td>
+                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
+                      {r.personalEmail}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
+                      {r.title}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
+                      {r.startDate || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-mono text-brand-gray border-b border-brand-border whitespace-nowrap">
+                      {r.suggestedPrimaryEmail}
+                    </td>
+                    <td className="px-4 py-3 border-b border-brand-border whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[r.status]}`}
+                      >
+                        {r.status}
+                      </span>
+                    </td>
                   </tr>
                 ))
               )}
@@ -359,27 +359,16 @@ function Field({
   autoComplete?: string;
 }) {
   return (
-    <label style={{ display: "grid", gap: 6 }}>
-      <span style={{ fontSize: 12, opacity: 0.75 }}>{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
       <input
         value={value}
         placeholder={placeholder}
         type={type ?? "text"}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        style={{
-          height: 36,
-          padding: "0 10px",
-          borderRadius: 10,
-          border: "1px solid rgba(0,0,0,0.2)"
-        }}
+        className="h-10 px-3 rounded-lg border border-brand-border text-sm focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red"
       />
     </label>
   );
 }
-const cellStyle: React.CSSProperties = {
-  padding: "10px 10px",
-  borderBottom: "1px solid rgba(0,0,0,0.08)",
-  fontSize: 13,
-  whiteSpace: "nowrap"
-};
