@@ -74,3 +74,10 @@ if (otelEsmDir && fs.existsSync(otelEsmDir)) {
     console.log("[patch-next-node22] Fix 2: @opentelemetry/api/build/esm/package.json already exists.");
   }
 }
+
+// --- Fix 3: clear Turbopack cache so patched files take effect ---
+const turbopackCache = path.join(__dirname, "..", ".next", "cache", "turbopack");
+if (fs.existsSync(turbopackCache)) {
+  fs.rmSync(turbopackCache, { recursive: true, force: true });
+  console.log("[patch-next-node22] Fix 3: cleared stale Turbopack cache.");
+}
