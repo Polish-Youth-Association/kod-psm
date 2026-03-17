@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+const CONTEXT_WINDOW = 1_048_576; // gemini-2.5-flash token limit
+
+function estimateTokens(messages: { text: string }[], input: string) {
+  const chars = messages.reduce((sum, m) => sum + m.text.length, 0) + input.length;
+  return Math.round(chars / 4);
+}
 
 type Message = {
   id: string;
@@ -15,6 +22,11 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const contextPct = useMemo(() => {
+    const tokens = estimateTokens(messages, input);
+    return Math.min(100, Math.round((tokens / CONTEXT_WINDOW) * 100));
+  }, [messages, input]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -133,7 +145,10 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="shrink-0 flex gap-3 items-end border border-brand-border rounded-2xl p-3 focus-within:ring-2 focus-within:ring-brand-red/30 focus-within:border-brand-red transition-colors">
+      <div className="shrink-0 flex gap-3 items-center border border-brand-border rounded-2xl p-3 focus-within:ring-2 focus-within:ring-brand-red/30 focus-within:border-brand-red transition-colors">
+        <span className={`text-xs font-mono shrink-0 ${contextPct >= 90 ? "text-red-500" : contextPct >= 70 ? "text-yellow-500" : "text-brand-gray"}`}>
+          {contextPct}%
+        </span>
         <textarea
           ref={inputRef}
           value={input}
