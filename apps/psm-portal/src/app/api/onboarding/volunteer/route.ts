@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const url = `${base.replace(/\/$/, "")}/v1/onboarding/volunteers`;
+  const url = `${base.replace(/\/$/, "")}/v1/onboarding/volunteers`; 
 
   try {
     const payload = await req.json();

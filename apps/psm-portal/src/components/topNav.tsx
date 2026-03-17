@@ -7,7 +7,8 @@ import Image from "next/image";
 const links = [
   { href: "/", label: "Home" },
   { href: "/volunteer-onboarding", label: "Volunteer Onboarding" },
-  { href: "/member-onboarding", label: "Member Onboarding" }
+  { href: "/member-onboarding", label: "Member Onboarding" },
+  { href: "/chat", label: "Assistant" }
 ];
 
 export function TopNav() {

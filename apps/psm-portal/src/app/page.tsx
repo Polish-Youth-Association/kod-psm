@@ -68,6 +68,23 @@ export default function Home() {
             certificate attachment.
           </p>
         </Link>
+
+        <Link
+          href="/chat"
+          className="group block p-5 bg-white border border-brand-border rounded-2xl hover:border-brand-red hover:shadow-sm transition-all duration-150"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-lg bg-brand-red-light flex items-center justify-center text-brand-red font-bold text-sm">
+              AI
+            </div>
+            <h2 className="text-base font-semibold text-brand-dark group-hover:text-brand-red transition-colors">
+              PSM Assistant
+            </h2>
+          </div>
+          <p className="text-sm text-brand-gray">
+            Gemini-powered assistant for PSM operations, onboarding questions, and more.
+          </p>
+        </Link>
       </div>
 
       {/* Roadmap note */}
