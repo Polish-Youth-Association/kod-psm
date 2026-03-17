@@ -4,6 +4,7 @@ WORKDIR /repo
 RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY tsconfig.base.json tsconfig.json ./
 COPY libs ./libs
 COPY apps/certificate-generator ./apps/certificate-generator
 
