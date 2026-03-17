@@ -36,7 +36,8 @@ const app = createApp((router) => {
       const model = genAI.getGenerativeModel({
         model: 'gemini-2.5-flash',
         systemInstruction: SYSTEM_PROMPT,
-        tools: [{ googleSearch: {} }],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        tools: [{ googleSearch: {} } as any],
       });
 
       const chat = model.startChat({
