@@ -13,5 +13,5 @@ app.get('/', (_req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log('🚀 member-onboarding (member-onboarding) running on port ' + PORT);
+  console.log('🚀 member-onboarding running on port ' + PORT);
 });
