@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { GoogleAuth } from "google-auth-library";
 
+//Basic API Connectivity test — verifies that the API_BASE is set and that we can successfully call it with an ID token.
+
 export async function GET() {
   const base = process.env.API_BASE;
 
