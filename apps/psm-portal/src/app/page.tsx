@@ -50,6 +50,24 @@ export default function Home() {
             volunteers.
           </p>
         </Link>
+
+        <Link
+          href="/member-onboarding"
+          className="group block p-5 bg-white border border-brand-border rounded-2xl hover:border-brand-red hover:shadow-sm transition-all duration-150"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-lg bg-brand-red-light flex items-center justify-center text-brand-red font-bold text-sm">
+              M
+            </div>
+            <h2 className="text-base font-semibold text-brand-dark group-hover:text-brand-red transition-colors">
+              Member Onboarding
+            </h2>
+          </div>
+          <p className="text-sm text-brand-gray">
+            Send a welcome email to a new PSM member with their membership ID and an optional
+            certificate attachment.
+          </p>
+        </Link>
       </div>
 
       {/* Roadmap note */}
