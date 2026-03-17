@@ -214,16 +214,6 @@ app.post(
   },
 );
 
-const clientDistPath = path.join(__dirname, 'client');
-app.use(express.static(clientDistPath));
-
-app.get('*', (_req: Request, res: Response) => {
-  const indexPath = path.join(clientDistPath, 'index.html');
-  if (!fs.existsSync(indexPath)) {
-    return res.status(500).send('Client build not found');
-  }
-  res.sendFile(indexPath);
-});
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
