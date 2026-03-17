@@ -55,3 +55,11 @@ apps:
     secret_prefix: "psm-portal"
     iam_file: "apps/psm-portal/iam.yaml"
     secrets: []
+  - id: gemini
+    name: "gemini"
+    path: "apps/gemini"
+    region: "us-central1"
+    artifact_repo: "gemini"
+    secret_prefix: "gemini"
+    iam_file: "apps/gemini/iam.yaml"
+    secrets: []
