@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 const CONTEXT_WINDOW = 1_048_576; // gemini-2.5-flash token limit
 
@@ -113,13 +114,25 @@ export default function ChatPage() {
           >
             <div
               className={[
-                "max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
+                "max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed",
                 m.role === "user"
-                  ? "bg-brand-red text-white rounded-br-sm"
+                  ? "bg-brand-red text-white rounded-br-sm whitespace-pre-wrap"
                   : "bg-gray-100 text-brand-dark rounded-bl-sm"
               ].join(" ")}
             >
-              {m.text}
+              {m.role === "user" ? m.text : (
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                    ul: ({ children }) => <ul className="list-disc pl-4 mb-1">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal pl-4 mb-1">{children}</ol>,
+                    li: ({ children }) => <li className="mb-0.5">{children}</li>,
+                  }}
+                >
+                  {m.text}
+                </ReactMarkdown>
+              )}
             </div>
           </div>
         ))}
