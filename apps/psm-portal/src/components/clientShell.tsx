@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { TopNav } from "./topNav";
 import { AiSidebar } from "./aiSidebar";
 
 export function ClientShell({ children }: { children: React.ReactNode }) {
   const [aiOpen, setAiOpen] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname === "/chat") setAiOpen(false);
+  }, [pathname]);
 
   return (
     <div className="flex h-screen overflow-hidden">
