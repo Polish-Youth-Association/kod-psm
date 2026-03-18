@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { TopNav } from "./topNav";
 import { AiSidebar } from "./aiSidebar";
+import { UserContext } from "./userContext";
 
-export function ClientShell({ children }: { children: React.ReactNode }) {
+export function ClientShell({ children, userEmail }: { children: React.ReactNode; userEmail: string | null }) {
   const [aiOpen, setAiOpen] = useState(false);
   const pathname = usePathname();
 
@@ -14,6 +15,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
+    <UserContext.Provider value={{ userEmail }}>
     <div className="flex h-screen overflow-hidden">
       {/* Main content — shrinks when sidebar opens */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -32,5 +34,6 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
         <AiSidebar open={aiOpen} onClose={() => setAiOpen(false)} />
       </div>
     </div>
+    </UserContext.Provider>
   );
 }
