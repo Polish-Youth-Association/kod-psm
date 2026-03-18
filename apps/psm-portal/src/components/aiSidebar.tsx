@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { useUser } from "./userContext";
 
 const CONTEXT_WINDOW = 1_048_576;
 
@@ -17,43 +18,34 @@ type Message = {
 };
 
 export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { userEmail } = useUser();
+  const storageKey = `psm-chat:${userEmail ?? "anonymous"}`;
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = sessionStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const storageKeyRef = useRef<string | null>(null);
 
   const contextPct = useMemo(() => {
     const tokens = estimateTokens(messages, input);
     return Math.min(100, Math.round((tokens / CONTEXT_WINDOW) * 100));
   }, [messages, input]);
 
-  // Resolve user email from IAP, then load session history from sessionStorage
-  useEffect(() => {
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then(({ email }: { email: string | null }) => {
-        const key = `psm-chat:${email ?? "anonymous"}`;
-        storageKeyRef.current = key;
-        try {
-          const saved = sessionStorage.getItem(key);
-          if (saved) setMessages(JSON.parse(saved));
-        } catch {}
-      })
-      .catch(() => {
-        storageKeyRef.current = "psm-chat:anonymous";
-      });
-  }, []);
-
   // Persist history to sessionStorage on every change
   useEffect(() => {
-    if (!storageKeyRef.current) return;
     try {
-      sessionStorage.setItem(storageKeyRef.current, JSON.stringify(messages));
+      sessionStorage.setItem(storageKey, JSON.stringify(messages));
     } catch {}
-  }, [messages]);
+  }, [messages, storageKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
