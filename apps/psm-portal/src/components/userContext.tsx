@@ -2,9 +2,23 @@
 
 import { createContext, useContext } from "react";
 
-type UserContextValue = { userEmail: string | null };
+export type Message = {
+  id: string;
+  role: "user" | "model";
+  text: string;
+};
 
-export const UserContext = createContext<UserContextValue>({ userEmail: null });
+type UserContextValue = {
+  userEmail: string | null;
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+};
+
+export const UserContext = createContext<UserContextValue>({
+  userEmail: null,
+  messages: [],
+  setMessages: () => {},
+});
 
 export function useUser() {
   return useContext(UserContext);

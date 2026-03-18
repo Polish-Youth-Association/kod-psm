@@ -11,16 +11,8 @@ function estimateTokens(messages: { text: string }[], input: string) {
   return Math.round(chars / 4);
 }
 
-type Message = {
-  id: string;
-  role: "user" | "model";
-  text: string;
-};
-
 export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { userEmail } = useUser();
-  const storageKey = `psm-chat:${userEmail ?? "anonymous"}`;
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, setMessages } = useUser();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,22 +23,6 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
     const tokens = estimateTokens(messages, input);
     return Math.min(100, Math.round((tokens / CONTEXT_WINDOW) * 100));
   }, [messages, input]);
-
-  // Load history from sessionStorage after hydration
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem(storageKey);
-      if (saved) setMessages(JSON.parse(saved));
-    } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Persist history to sessionStorage on every change
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(storageKey, JSON.stringify(messages));
-    } catch {}
-  }, [messages, storageKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,7 +36,7 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
     const text = input.trim();
     if (!text || loading) return;
 
-    const userMsg: Message = { id: `msg_${Date.now()}`, role: "user", text };
+    const userMsg = { id: `msg_${Date.now()}`, role: "user" as const, text };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setError(null);
@@ -77,7 +53,7 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
       if (!json.ok) throw new Error(json.error ?? "Unknown error");
       setMessages((prev) => [
         ...prev,
-        { id: `msg_${Date.now()}`, role: "model", text: json.reply },
+        { id: `msg_${Date.now()}`, role: "model" as const, text: json.reply },
       ]);
     } catch (err: any) {
       setError(err?.message ?? String(err));

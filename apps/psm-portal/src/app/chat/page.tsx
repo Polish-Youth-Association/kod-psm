@@ -4,24 +4,15 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useUser } from "@/components/userContext";
 
-const CONTEXT_WINDOW = 1_048_576; // gemini-2.5-flash token limit
+const CONTEXT_WINDOW = 1_048_576;
 
 function estimateTokens(messages: { text: string }[], input: string) {
   const chars = messages.reduce((sum, m) => sum + m.text.length, 0) + input.length;
   return Math.round(chars / 4);
 }
 
-type Message = {
-  id: string;
-  role: "user" | "model";
-  text: string;
-};
-
 export default function ChatPage() {
-  const { userEmail } = useUser();
-  const storageKey = `psm-chat:${userEmail ?? "anonymous"}`;
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, setMessages } = useUser();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,34 +24,15 @@ export default function ChatPage() {
     return Math.min(100, Math.round((tokens / CONTEXT_WINDOW) * 100));
   }, [messages, input]);
 
-  // Load history from sessionStorage after hydration
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem(storageKey);
-      if (saved) setMessages(JSON.parse(saved));
-    } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(storageKey, JSON.stringify(messages));
-    } catch {}
-  }, [messages, storageKey]);
 
   async function send() {
     const text = input.trim();
     if (!text || loading) return;
 
-    const userMsg: Message = {
-      id: `msg_${Date.now()}`,
-      role: "user",
-      text
-    };
+    const userMsg = { id: `msg_${Date.now()}`, role: "user" as const, text };
 
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -81,7 +53,7 @@ export default function ChatPage() {
 
       setMessages((prev) => [
         ...prev,
-        { id: `msg_${Date.now()}`, role: "model", text: json.reply }
+        { id: `msg_${Date.now()}`, role: "model" as const, text: json.reply }
       ]);
     } catch (err: any) {
       setError(err?.message ?? String(err));
