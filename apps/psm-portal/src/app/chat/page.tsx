@@ -21,15 +21,7 @@ export default function ChatPage() {
   const { userEmail } = useUser();
   const storageKey = `psm-chat:${userEmail ?? "anonymous"}`;
 
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const saved = sessionStorage.getItem(storageKey);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +32,15 @@ export default function ChatPage() {
     const tokens = estimateTokens(messages, input);
     return Math.min(100, Math.round((tokens / CONTEXT_WINDOW) * 100));
   }, [messages, input]);
+
+  // Load history from sessionStorage after hydration
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(storageKey);
+      if (saved) setMessages(JSON.parse(saved));
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
