@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const PORT = Number(process.env.PORT) || 8080;
 
-const SYSTEM_PROMPT = `You are a helpful internal assistant for the Polish Youth Association (PSM — Polska Szkoła Muzyczna / Polskie Stowarzyszenie Młodzieżowe). You help staff and volunteers with questions about member onboarding, volunteer processes, events, and general PSM operations. Be concise and friendly.`;
+const SYSTEM_PROMPT = `You are a helpful internal assistant for the Polish Youth Association (PSM — Polskie Stowarzyszenie Młodzieżowe). You help staff and volunteers with questions about member onboarding, volunteer processes, events, and general PSM operations. Be concise and friendly.`;
 
 const apiKey = process.env.GEMINI_API_KEY;
 
