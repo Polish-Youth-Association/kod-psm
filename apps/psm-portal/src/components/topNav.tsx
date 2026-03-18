@@ -18,6 +18,7 @@ export function TopNav({
   onAiToggle?: () => void;
 }) {
   const pathname = usePathname();
+  const onChatPage = pathname === "/chat";
   return (
     <header className="sticky top-0 z-10 bg-white border-b border-brand-border">
       <nav className="h-16 max-w-7xl mx-auto px-6 flex items-center gap-4">
@@ -55,9 +56,12 @@ export function TopNav({
         {/* AI toggle button */}
         <button
           onClick={onAiToggle}
+          disabled={onChatPage}
           className={[
             "ml-auto shrink-0 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all duration-150",
-            aiOpen
+            onChatPage
+              ? "bg-white text-gray-300 border-brand-border cursor-not-allowed"
+              : aiOpen
               ? "bg-brand-red text-white border-brand-red shadow-sm"
               : "bg-white text-brand-gray border-brand-border hover:border-brand-red hover:text-brand-red",
           ].join(" ")}
