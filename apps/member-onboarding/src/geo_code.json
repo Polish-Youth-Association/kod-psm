@@ -1,0 +1,106 @@
+{
+    "DNY": {
+      "englishMeaning": "Headquarters in New York",
+      "countryOrRegion": "United States"
+    },
+    "DCH": {
+      "englishMeaning": "Delegation in Chicago",
+      "countryOrRegion": "United States"
+    },
+    "DMI": {
+      "englishMeaning": "Delegation in Miami",
+      "countryOrRegion": "United States"
+    },
+    "DSA": {
+      "englishMeaning": "Delegation in San Antonio",
+      "countryOrRegion": "United States"
+    },
+    "DLA": {
+      "englishMeaning": "Delegation in Los Angeles",
+      "countryOrRegion": "United States"
+    },
+    "DPL": {
+      "englishMeaning": "Permanent Representation in Warsaw",
+      "countryOrRegion": "Poland"
+    },
+    "PLDS": {
+      "englishMeaning": "Branch in Lower Silesian Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLKP": {
+      "englishMeaning": "Branch in Kuyavian-Pomeranian Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLLU": {
+      "englishMeaning": "Branch in Lublin Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLLB": {
+      "englishMeaning": "Branch in Lubusz",
+      "countryOrRegion": "Poland"
+    },
+    "PLLD": {
+      "englishMeaning": "Branch in Łódź Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLMA": {
+      "englishMeaning": "Branch in Lesser Poland Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLOP": {
+      "englishMeaning": "Branch in Opolskie Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLPK": {
+      "englishMeaning": "Branch in Subcarpathian Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLPD": {
+      "englishMeaning": "Branch in Podlaskie Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLPM": {
+      "englishMeaning": "Branch in Pomeranian Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLSL": {
+      "englishMeaning": "Branch in Silesian Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLSK": {
+      "englishMeaning": "Branch in Świętokrzyskie Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLMN": {
+      "englishMeaning": "Branch in Warmian-Masurian Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLWP": {
+      "englishMeaning": "Branch in Greater Poland Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "PLZP": {
+      "englishMeaning": "Branch in West Pomeranian Voivodeship",
+      "countryOrRegion": "Poland"
+    },
+    "DIT": {
+      "englishMeaning": "Delegation in Italy",
+      "countryOrRegion": "Italy"
+    },
+    "DES": {
+      "englishMeaning": "Delegation in Spain",
+      "countryOrRegion": "Spain"
+    },
+    "DCA": {
+      "englishMeaning": "Delegation in Canada",
+      "countryOrRegion": "Canada"
+    },
+    "DGB": {
+      "englishMeaning": "Delegation in Great Britain",
+      "countryOrRegion": "Great Britain"
+    },
+    "DFR": {
+        "englishMeaning": "Delegation in France",
+        "countryOrRegion": "France"
+    }
+  }

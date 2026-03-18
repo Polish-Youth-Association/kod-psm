@@ -8,6 +8,7 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/volunteer-onboarding", label: "Volunteer Onboarding" },
   { href: "/member-onboarding", label: "Member Onboarding" },
+  { href: "/onboarding-queue", label: "Onboarding Queue" },
 ];
 
 export function TopNav({

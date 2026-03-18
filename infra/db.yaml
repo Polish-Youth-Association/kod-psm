@@ -11,6 +11,9 @@ databases:
     collections:
       - name: members
         description: "One document per PSM member. Keyed by Wix submission ID."
+        indexes:
+          # Required for GET /api/members/pending (onboardingStatus filter + createdAt sort)
+          - fields: [onboardingStatus ASC, createdAt DESC]
       - name: counters
         description: "Per-prefix atomic counters for member ID assignment (e.g. counters/DNY)."
 
