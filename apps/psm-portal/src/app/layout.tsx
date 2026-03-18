@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TopNav } from "@/components/topNav";
+import { ClientShell } from "@/components/clientShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,8 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased bg-white text-brand-dark font-sans">
-        <TopNav />
-        {children}
+        <ClientShell>{children}</ClientShell>
       </body>
     </html>
   );

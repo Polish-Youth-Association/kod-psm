@@ -8,10 +8,15 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/volunteer-onboarding", label: "Volunteer Onboarding" },
   { href: "/member-onboarding", label: "Member Onboarding" },
-  { href: "/chat", label: "Assistant" }
 ];
 
-export function TopNav() {
+export function TopNav({
+  aiOpen,
+  onAiToggle,
+}: {
+  aiOpen?: boolean;
+  onAiToggle?: () => void;
+}) {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-10 bg-white border-b border-brand-border">
@@ -27,7 +32,7 @@ export function TopNav() {
           />
         </div>
 
-        <div className="flex items-center gap-1 ml-4">
+        <div className="flex items-center gap-1 ml-4 flex-1">
           {links.map((l) => {
             const active = pathname === l.href;
             return (
@@ -38,7 +43,7 @@ export function TopNav() {
                   "px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150",
                   active
                     ? "bg-brand-red-light text-brand-red"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-brand-dark"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-brand-dark",
                 ].join(" ")}
               >
                 {l.label}
@@ -46,6 +51,20 @@ export function TopNav() {
             );
           })}
         </div>
+
+        {/* AI toggle button */}
+        <button
+          onClick={onAiToggle}
+          className={[
+            "ml-auto shrink-0 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all duration-150",
+            aiOpen
+              ? "bg-brand-red text-white border-brand-red shadow-sm"
+              : "bg-white text-brand-gray border-brand-border hover:border-brand-red hover:text-brand-red",
+          ].join(" ")}
+          aria-label="Toggle AI assistant"
+        >
+          AI
+        </button>
       </nav>
     </header>
   );
