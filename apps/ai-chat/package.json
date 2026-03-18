@@ -1,5 +1,5 @@
 {
-  "name": "@kod-psm/persist-member",
+  "name": "@kod-psm/ai-chat",
   "version": "0.1.0",
   "private": true,
   "main": "dist/index.js",
@@ -10,11 +10,11 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
   "dependencies": {
-    "@kod-psm/http-helpers": "workspace:*",
+    "@google/generative-ai": "^0.24.0",
     "@kod-psm/gcp-helpers": "workspace:*",
-    "firebase-admin": "^13.0.0",
-    "zod": "^3.24.0",
-    "zipcodes": "^8.0.0"
+    "@kod-psm/http-helpers": "workspace:*",
+    "dotenv": "^17.2.3",
+    "firebase-admin": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

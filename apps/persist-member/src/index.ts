@@ -1,18 +1,14 @@
 import { createApp, listen } from '@kod-psm/http-helpers';
+import { initFirestore } from '@kod-psm/gcp-helpers';
 import admin from 'firebase-admin';
 import { z } from 'zod';
-import { getFirestore } from 'firebase-admin/firestore';
 
 const PORT = Number(process.env.PORT) || 8080;
 
 // Secret used to authenticate Wix -> your service
 const WIX_WEBHOOK_SECRET = process.env.WIX_WEBHOOK_SECRET ?? '';
 
-// Firebase Admin (Cloud Run: use attached service account / ADC)
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-const db = getFirestore(admin.app(), 'psm-member-platform');
+const db = initFirestore({ databaseId: 'psm-member-platform' });
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
