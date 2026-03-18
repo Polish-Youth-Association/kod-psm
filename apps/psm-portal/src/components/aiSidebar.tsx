@@ -23,11 +23,37 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const storageKeyRef = useRef<string | null>(null);
 
   const contextPct = useMemo(() => {
     const tokens = estimateTokens(messages, input);
     return Math.min(100, Math.round((tokens / CONTEXT_WINDOW) * 100));
   }, [messages, input]);
+
+  // Resolve user email from IAP, then load session history from sessionStorage
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then(({ email }: { email: string | null }) => {
+        const key = `psm-chat:${email ?? "anonymous"}`;
+        storageKeyRef.current = key;
+        try {
+          const saved = sessionStorage.getItem(key);
+          if (saved) setMessages(JSON.parse(saved));
+        } catch {}
+      })
+      .catch(() => {
+        storageKeyRef.current = "psm-chat:anonymous";
+      });
+  }, []);
+
+  // Persist history to sessionStorage on every change
+  useEffect(() => {
+    if (!storageKeyRef.current) return;
+    try {
+      sessionStorage.setItem(storageKeyRef.current, JSON.stringify(messages));
+    } catch {}
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
