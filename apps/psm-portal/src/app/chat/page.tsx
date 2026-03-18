@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useUser } from "@/components/userContext";
 
-const CONTEXT_WINDOW = 1_048_576;
+const CONTEXT_WINDOW = 16_384;
 
 function estimateTokens(messages: { text: string }[], input: string) {
   const chars = messages.reduce((sum, m) => sum + m.text.length, 0) + input.length;
