@@ -77,22 +77,8 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        className={[
-          "fixed inset-0 z-30 bg-black/20 backdrop-blur-[2px] transition-opacity duration-300",
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        ].join(" ")}
-      />
-
       {/* Sidebar panel */}
-      <aside
-        className={[
-          "fixed top-0 right-0 z-40 h-full w-[420px] max-w-[95vw] bg-white border-l border-brand-border shadow-2xl flex flex-col transition-transform duration-300 ease-in-out",
-          open ? "translate-x-0" : "translate-x-full",
-        ].join(" ")}
-      >
+      <aside className="h-full w-[420px] bg-white border-l border-brand-border flex flex-col">
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-brand-border shrink-0">
           <div>
