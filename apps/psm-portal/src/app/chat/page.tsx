@@ -110,14 +110,14 @@ export default function ChatPage() {
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex chat-message-in ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
               className={[
-                "max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed",
+                "max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-shadow duration-200",
                 m.role === "user"
-                  ? "bg-brand-red text-white rounded-br-sm whitespace-pre-wrap"
-                  : "bg-gray-100 text-brand-dark rounded-bl-sm"
+                  ? "bg-brand-red text-white rounded-br-sm whitespace-pre-wrap hover:shadow-md"
+                  : "bg-gray-100 text-brand-dark rounded-bl-sm hover:bg-gray-200/70"
               ].join(" ")}
             >
               {m.role === "user" ? m.text : (
@@ -138,12 +138,12 @@ export default function ChatPage() {
         ))}
 
         {loading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 text-brand-gray px-4 py-3 rounded-2xl rounded-bl-sm text-sm">
-              <span className="inline-flex gap-1">
-                <span className="animate-bounce" style={{ animationDelay: "0ms" }}>·</span>
-                <span className="animate-bounce" style={{ animationDelay: "150ms" }}>·</span>
-                <span className="animate-bounce" style={{ animationDelay: "300ms" }}>·</span>
+          <div className="flex justify-start chat-message-in">
+            <div className="chat-typing bg-gray-100 text-brand-gray px-4 py-3 rounded-2xl rounded-bl-sm text-sm">
+              <span className="inline-flex gap-1.5 items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-gray animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-gray animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-gray animate-bounce" style={{ animationDelay: "300ms" }} />
               </span>
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function ChatPage() {
         <button
           onClick={send}
           disabled={!input.trim() || loading}
-          className="px-4 py-2 rounded-xl bg-brand-red text-white text-sm font-semibold hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+          className="px-4 py-2 rounded-xl bg-brand-red text-white text-sm font-semibold hover:bg-brand-red-dark active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 shrink-0"
         >
           Send
         </button>
