@@ -26,6 +26,7 @@ export type StorageClient = {
     contentType?: string,
     metadata?: Record<string, string>,
   ) => Promise<SaveResult>;
+  getFile: (objectPath: string) => Promise<Buffer>;
 };
 
 // Cloud Run exposes K_SERVICE – good enough to differentiate envs
@@ -76,8 +77,18 @@ export function initStorage(config: StorageConfig): StorageClient {
     };
   }
 
+  async function getFile(objectPath: string): Promise<Buffer> {
+    if (bucket) {
+      const [contents] = await bucket.file(objectPath).download();
+      return contents as Buffer;
+    }
+    const fullPath = path.join(localBaseDir, objectPath);
+    return fs.readFile(fullPath);
+  }
+
   return {
     backend: useGcs ? 'gcs' : 'local',
     saveFile,
+    getFile,
   };
 }
