@@ -16,15 +16,3 @@ databases:
           - fields: [onboardingStatus ASC, createdAt DESC]
       - name: counters
         description: "Per-prefix atomic counters for member ID assignment (e.g. counters/DNY)."
-
-  - id: psm-chat-sessions
-    description: "AI assistant chat sessions per IAP-authenticated user"
-    collections:
-      - name: sessions
-        description: >
-          One document per session.
-          Path: sessions/{sessionId}
-          Fields: userEmail, title, createdAt, updatedAt, messages[]
-        indexes:
-          # Required for GET /v1/sessions?userEmail=... ordered by updatedAt
-          - fields: [userEmail ASC, updatedAt DESC]
