@@ -318,16 +318,35 @@ app.post('/api/members/:docId/approve', async (req: Request, res: Response) => {
       return res.status(409).json({ ok: false, error: 'member already onboarded' });
     }
 
-    // Fetch certificate if available
+    // Fetch certificate — generate on the fly if not already done at intake
     let attachments: { filename: string; content: Buffer; contentType: string }[] = [];
-    if (member.certStatus === 'generated' && member.certObjectPath) {
+    let certObjectPath = member.certObjectPath as string | undefined;
+
+    if (member.certStatus !== 'generated' || !certObjectPath) {
       try {
-        // Use localPath for local dev, GCS for production
+        const cert = await callCertificateGenerator(member.memberId, member.firstName, member.lastName);
+        if (cert.objectPath) {
+          certObjectPath = cert.objectPath;
+          await memberRef.update({
+            certStatus: 'generated',
+            certObjectPath: cert.objectPath,
+            certLocalPath: cert.localPath ?? null,
+            certBackend: cert.backend ?? null,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (certErr) {
+        console.warn('On-demand cert generation failed for', member.memberId, certErr);
+      }
+    }
+
+    if (certObjectPath) {
+      try {
         let certBuffer: Buffer;
         if (member.certBackend === 'local' && member.certLocalPath) {
           certBuffer = await fsp.readFile(member.certLocalPath);
         } else {
-          certBuffer = await storage.getFile(member.certObjectPath);
+          certBuffer = await storage.getFile(certObjectPath);
         }
         attachments = [{
           filename: `PSM_Certificate_${member.memberId}.pdf`,
