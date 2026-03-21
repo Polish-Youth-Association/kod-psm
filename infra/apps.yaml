@@ -63,11 +63,3 @@ apps:
     secret_prefix: "gemini"
     iam_file: "apps/gemini/iam.yaml"
     secrets: []
-  - id: ai-chat
-    name: "ai-chat"
-    path: "apps/ai-chat"
-    region: "us-central1"
-    artifact_repo: "ai-chat"
-    secret_prefix: "ai-chat"
-    iam_file: "apps/ai-chat/iam.yaml"
-    secrets: []

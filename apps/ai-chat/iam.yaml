@@ -1,6 +1,0 @@
-serviceAccount: ai-chat-svc@PROJECT_ID.iam.gserviceaccount.com
-roles:
-  - roles/run.invoker
-
-resources: []
-
