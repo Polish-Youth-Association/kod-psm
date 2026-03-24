@@ -3,9 +3,4 @@ roles:
   - roles/run.invoker
   - roles/datastore.user
 
-resources:
-  - type: storage.bucket
-    name: gs://member_certificates
-    roles:
-      - roles/storage.objectViewer
-
+resources: []
