@@ -1,6 +1,11 @@
 serviceAccount: member-onboarding-svc@PROJECT_ID.iam.gserviceaccount.com
 roles:
   - roles/run.invoker
+  - roles/datastore.user
 
-resources: []
+resources:
+  - type: storage.bucket
+    name: gs://member_certificates
+    roles:
+      - roles/storage.objectViewer
 
