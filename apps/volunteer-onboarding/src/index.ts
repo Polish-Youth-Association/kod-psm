@@ -13,7 +13,6 @@ type VolunteerOnboardingPayload = {
   firstName: string;
   lastName: string;
   personalEmail: string;
-  team: string;
   startDate?: string;
   notes?: string;
   suggestedPrimaryEmail?: string;
@@ -83,10 +82,10 @@ const app = createApp((router) => {
   router.post("/v1/onboarding/volunteers", async (req, res) => {
     const body = (req.body ?? {}) as Partial<VolunteerOnboardingPayload>;
 
-    if (!body.firstName || !body.lastName || !body.personalEmail || !body.team) {
+    if (!body.firstName || !body.lastName || !body.personalEmail) {
       return res.status(400).json({
         ok: false,
-        error: "Missing required fields: firstName, lastName, personalEmail, team"
+        error: "Missing required fields: firstName, lastName, personalEmail"
       });
     }
 
