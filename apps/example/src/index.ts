@@ -6,7 +6,7 @@ const PORT = Number(process.env.PORT) || 8080;
 const app = express();
 
 const handler: RequestHandler = (_req, res) => {
-  res.json({ ok: true, service: "PING!" });
+  res.json({ ok: true, service: "Hello World!" });
 };
 
 app.get("/", handler);
