@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import fontkit from '@pdf-lib/fontkit';
 import path from 'node:path';
 import { initStorage } from '@kod-psm/gcp-helpers';
+import { uploadCertificateToDrive } from './driveUpload';
 
 const app = express();
 app.use(express.json());
@@ -100,6 +101,20 @@ app.post('/generate-certificate', async (req, res) => {
       },
     );
 
+    // Upload to Google Drive (best-effort — does not block or fail the response)
+    let driveFileId: string | undefined;
+    if (process.env.GOOGLE_DRIVE_FOLDER_ID) {
+      try {
+        driveFileId = await uploadCertificateToDrive(
+          pdfBytes,
+          `${certificateId}.pdf`,
+        );
+        console.log(`Drive upload success for ${certificateId}: ${driveFileId}`);
+      } catch (driveErr) {
+        console.warn(`Drive upload failed for ${certificateId}:`, driveErr);
+      }
+    }
+
     return res.json({
       ok: true,
       message:
@@ -107,6 +122,7 @@ app.post('/generate-certificate', async (req, res) => {
           ? 'Certificate generated and stored in Cloud Storage'
           : 'Certificate generated and stored locally',
       certificateId,
+      driveFileId,
       ...result,
     });
   } catch (err) {
