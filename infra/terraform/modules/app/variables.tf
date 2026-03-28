@@ -19,9 +19,3 @@ variable "roles" {
   type        = list(string)
   default     = []
 }
-
-variable "artifact_repo" {
-  description = "Artifact Registry repository name"
-  type        = string
-  default     = "apps"
-}
