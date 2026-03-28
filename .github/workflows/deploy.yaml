@@ -68,7 +68,18 @@ jobs:
           cat changed_files.txt || true
 
           # Find which app directories under apps/ changed
-          APPS=$(grep '^apps/' changed_files.txt | cut -d/ -f2 | sort -u | tr '\n' ' ' || true)
+          ALL_APPS=$(grep '^apps/' changed_files.txt | cut -d/ -f2 | sort -u || true)
+
+          # Filter out deleted apps (directory no longer exists)
+          APPS=""
+          for APP in $ALL_APPS; do
+            if [ -d "apps/$APP" ]; then
+              APPS="$APPS $APP"
+            else
+              echo "Skipping deleted app: $APP"
+            fi
+          done
+          APPS=$(echo "$APPS" | xargs)
 
           echo "Detected apps: $APPS"
 
