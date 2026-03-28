@@ -23,6 +23,7 @@ on:
 permissions:
   contents: read
   pull-requests: write  # Required to post plan output as a PR comment
+  id-token: write       # Required for WIF authentication
 
 env:
   TF_WORKSPACE: "psm-dev"
@@ -41,6 +42,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER_DEV }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_DEV }}
+          token_format: access_token
+          access_token_lifetime: 3600s
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
