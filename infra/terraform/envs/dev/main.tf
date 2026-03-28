@@ -84,6 +84,33 @@ module "psm_portal" {
   ]
 }
 
+# ─── Imports for pre-existing resources ─────────────────────────────────────
+
+import {
+  to = google_storage_bucket.certificates
+  id = "member_certificates_dev"
+}
+
+import {
+  to = google_artifact_registry_repository.apps
+  id = "projects/psm-platform-dev/locations/us-central1/repositories/apps"
+}
+
+# ─── Shared Artifact Registry repo ──────────────────────────────────────────
+# One repo named "apps" holds images for all services.
+
+resource "google_artifact_registry_repository" "apps" {
+  project       = var.project_id
+  location      = "us-central1"
+  repository_id = "apps"
+  format        = "DOCKER"
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [labels]
+  }
+}
+
 # ─── GCS bucket for certificates ────────────────────────────────────────────
 
 resource "google_storage_bucket" "certificates" {
@@ -99,40 +126,3 @@ resource "google_storage_bucket" "certificates" {
     condition { age = 365 }
   }
 }
-
-# ─── Firestore (Native mode) ─────────────────────────────────────────────────
-
-resource "google_firestore_database" "members" {
-  project     = var.project_id
-  name        = "members"
-  location_id = "us-central1"
-  type        = "FIRESTORE_NATIVE"
-}
-
-# ─── Workload Identity Federation (GitHub Actions → GCP) ────────────────────
-
-resource "google_iam_workload_identity_pool" "github" {
-  project                   = var.project_id
-  workload_identity_pool_id = "github-pool"
-  display_name              = "GitHub Actions pool"
-}
-
-resource "google_iam_workload_identity_pool_provider" "github" {
-  project                            = var.project_id
-  workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
-  workload_identity_pool_provider_id = "github-provider"
-  display_name                       = "GitHub OIDC provider"
-
-  attribute_mapping = {
-    "google.subject"       = "assertion.sub"
-    "attribute.repository" = "assertion.repository"
-    "attribute.ref"        = "assertion.ref"
-  }
-
-  attribute_condition = "assertion.repository == '${var.github_org}/${var.github_repo}'"
-
-  oidc {
-    issuer_uri = "https://token.actions.githubusercontent.com"
-  }
-}
-
