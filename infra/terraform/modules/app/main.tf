@@ -1,6 +1,6 @@
 resource "google_service_account" "app" {
   project      = var.project_id
-  account_id   = var.app_name
+  account_id   = "${var.app_name}-svc"
   display_name = "${var.app_name} Cloud Run service account"
 }
 

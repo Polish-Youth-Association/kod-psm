@@ -96,6 +96,36 @@ import {
   id = "projects/psm-platform-dev/locations/us-central1/repositories/apps"
 }
 
+import {
+  to = module.member_onboarding.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/member-onboarding-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.volunteer_onboarding.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/volunteer-onboarding-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.certificate_generator.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/certificate-generator-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.persist_member.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/persist-member-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.gemini.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/gemini-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.psm_portal.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/psm-portal-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
 # ─── Shared Artifact Registry repo ──────────────────────────────────────────
 # One repo named "apps" holds images for all services.
 
