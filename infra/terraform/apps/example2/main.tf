@@ -1,6 +1,13 @@
-variable "project_id" { type = string }
-variable "region" { type = string; default = "us-central1" }
-variable "example_url" { type = string }
+variable "project_id" {
+  type = string
+}
+variable "region" {
+  type    = string
+  default = "us-central1"
+}
+variable "example_url" {
+  type = string
+}
 
 module "sa" {
   source     = "../../modules/app"

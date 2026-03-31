@@ -1,9 +1,22 @@
-variable "project_id" { type = string }
-variable "region" { type = string; default = "us-central1" }
-variable "api_base_url" { type = string }
-variable "volunteer_onboarding_url" { type = string }
-variable "member_onboarding_url" { type = string }
-variable "gemini_url" { type = string }
+variable "project_id" {
+  type = string
+}
+variable "region" {
+  type    = string
+  default = "us-central1"
+}
+variable "api_base_url" {
+  type = string
+}
+variable "volunteer_onboarding_url" {
+  type = string
+}
+variable "member_onboarding_url" {
+  type = string
+}
+variable "gemini_url" {
+  type = string
+}
 
 module "sa" {
   source     = "../../modules/app"

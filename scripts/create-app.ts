@@ -202,8 +202,14 @@ CMD ["node", "dist/index.js"]
 
   writeFile(
     path.join(absTfPath, 'main.tf'),
-    `variable "project_id" { type = string }
-variable "region" { type = string; default = "us-central1" }
+    `variable "project_id" {
+  type = string
+}
+
+variable "region" {
+  type    = string
+  default = "us-central1"
+}
 
 module "sa" {
   source     = "../../modules/app"
