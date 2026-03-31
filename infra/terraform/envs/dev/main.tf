@@ -21,117 +21,71 @@ provider "google" {
   region  = "us-central1"
 }
 
-# ─── App service accounts + IAM ─────────────────────────────────────────────
-
-module "member_onboarding" {
-  source     = "../../modules/app"
-  project_id = var.project_id
-  app_name   = "member-onboarding"
-  roles = [
-    "roles/datastore.user",
-    "roles/storage.objectAdmin",
-    "roles/secretmanager.secretAccessor",
-    "roles/run.invoker",
-  ]
+locals {
+  region = "us-central1"
 }
 
-module "volunteer_onboarding" {
-  source     = "../../modules/app"
+# ─── Apps ────────────────────────────────────────────────────────────────────
+
+module "example" {
+  source     = "../../apps/example"
   project_id = var.project_id
-  app_name   = "volunteer-onboarding"
-  roles = [
-    "roles/secretmanager.secretAccessor",
-  ]
+  region     = local.region
+}
+
+module "example2" {
+  source      = "../../apps/example2"
+  project_id  = var.project_id
+  region      = local.region
+  example_url = module.example.service.url
 }
 
 module "certificate_generator" {
-  source     = "../../modules/app"
+  source     = "../../apps/certificate-generator"
   project_id = var.project_id
-  app_name   = "certificate-generator"
-  roles = [
-    "roles/storage.objectAdmin",
-    "roles/iam.serviceAccountTokenCreator",
-    "roles/secretmanager.secretAccessor",
-  ]
+  region     = local.region
+}
+
+module "member_onboarding" {
+  source                    = "../../apps/member-onboarding"
+  project_id                = var.project_id
+  region                    = local.region
+  certificate_generator_url = module.certificate_generator.service.url
+}
+
+module "volunteer_onboarding" {
+  source     = "../../apps/volunteer-onboarding"
+  project_id = var.project_id
+  region     = local.region
 }
 
 module "persist_member" {
-  source     = "../../modules/app"
+  source     = "../../apps/persist-member"
   project_id = var.project_id
-  app_name   = "persist-member"
-  roles = [
-    "roles/datastore.user",
-    "roles/secretmanager.secretAccessor",
-  ]
+  region     = local.region
 }
 
 module "gemini" {
-  source     = "../../modules/app"
+  source     = "../../apps/gemini"
   project_id = var.project_id
-  app_name   = "gemini"
-  roles = [
-    "roles/secretmanager.secretAccessor",
-  ]
+  region     = local.region
 }
 
 module "psm_portal" {
-  source     = "../../modules/app"
-  project_id = var.project_id
-  app_name   = "psm-portal"
-  roles = [
-    "roles/run.invoker",
-    "roles/secretmanager.secretAccessor",
-  ]
+  source                   = "../../apps/psm-portal"
+  project_id               = var.project_id
+  region                   = local.region
+  api_base_url             = module.example.service.url
+  volunteer_onboarding_url = module.volunteer_onboarding.service.url
+  member_onboarding_url    = module.member_onboarding.service.url
+  gemini_url               = module.gemini.service.url
 }
 
-# ─── Imports for pre-existing resources ─────────────────────────────────────
-
-import {
-  to = google_storage_bucket.certificates
-  id = "member_certificates_dev"
-}
-
-import {
-  to = google_artifact_registry_repository.apps
-  id = "projects/psm-platform-dev/locations/us-central1/repositories/apps"
-}
-
-import {
-  to = module.member_onboarding.google_service_account.app
-  id = "projects/psm-platform-dev/serviceAccounts/member-onboarding-svc@psm-platform-dev.iam.gserviceaccount.com"
-}
-
-import {
-  to = module.volunteer_onboarding.google_service_account.app
-  id = "projects/psm-platform-dev/serviceAccounts/volunteer-onboarding-svc@psm-platform-dev.iam.gserviceaccount.com"
-}
-
-import {
-  to = module.certificate_generator.google_service_account.app
-  id = "projects/psm-platform-dev/serviceAccounts/certificate-generator-svc@psm-platform-dev.iam.gserviceaccount.com"
-}
-
-import {
-  to = module.persist_member.google_service_account.app
-  id = "projects/psm-platform-dev/serviceAccounts/persist-member-svc@psm-platform-dev.iam.gserviceaccount.com"
-}
-
-import {
-  to = module.gemini.google_service_account.app
-  id = "projects/psm-platform-dev/serviceAccounts/gemini-svc@psm-platform-dev.iam.gserviceaccount.com"
-}
-
-import {
-  to = module.psm_portal.google_service_account.app
-  id = "projects/psm-platform-dev/serviceAccounts/psm-portal-svc@psm-platform-dev.iam.gserviceaccount.com"
-}
-
-# ─── Shared Artifact Registry repo ──────────────────────────────────────────
-# One repo named "apps" holds images for all services.
+# ─── Shared infrastructure ───────────────────────────────────────────────────
 
 resource "google_artifact_registry_repository" "apps" {
   project       = var.project_id
-  location      = "us-central1"
+  location      = local.region
   repository_id = "apps"
   format        = "DOCKER"
 
@@ -140,8 +94,6 @@ resource "google_artifact_registry_repository" "apps" {
     ignore_changes  = [labels]
   }
 }
-
-# ─── GCS bucket for certificates ────────────────────────────────────────────
 
 resource "google_storage_bucket" "certificates" {
   project       = var.project_id
@@ -155,4 +107,96 @@ resource "google_storage_bucket" "certificates" {
     action { type = "Delete" }
     condition { age = 365 }
   }
+}
+
+# ─── Imports for pre-existing resources ──────────────────────────────────────
+
+import {
+  to = google_storage_bucket.certificates
+  id = "member_certificates_dev"
+}
+
+import {
+  to = google_artifact_registry_repository.apps
+  id = "projects/psm-platform-dev/locations/us-central1/repositories/apps"
+}
+
+import {
+  to = module.example.module.sa.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/example-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.example.module.service.google_cloud_run_v2_service.service
+  id = "projects/psm-platform-dev/locations/us-central1/services/example"
+}
+
+import {
+  to = module.example2.module.sa.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/example2-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.example2.module.service.google_cloud_run_v2_service.service
+  id = "projects/psm-platform-dev/locations/us-central1/services/example2"
+}
+
+import {
+  to = module.member_onboarding.module.sa.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/member-onboarding-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.member_onboarding.module.service.google_cloud_run_v2_service.service
+  id = "projects/psm-platform-dev/locations/us-central1/services/member-onboarding"
+}
+
+import {
+  to = module.volunteer_onboarding.module.sa.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/volunteer-onboarding-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.volunteer_onboarding.module.service.google_cloud_run_v2_service.service
+  id = "projects/psm-platform-dev/locations/us-central1/services/volunteer-onboarding"
+}
+
+import {
+  to = module.certificate_generator.module.sa.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/certificate-generator-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.certificate_generator.module.service.google_cloud_run_v2_service.service
+  id = "projects/psm-platform-dev/locations/us-central1/services/certificate-generator"
+}
+
+import {
+  to = module.persist_member.module.sa.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/persist-member-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.persist_member.module.service.google_cloud_run_v2_service.service
+  id = "projects/psm-platform-dev/locations/us-central1/services/persist-member"
+}
+
+import {
+  to = module.gemini.module.sa.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/gemini-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.gemini.module.service.google_cloud_run_v2_service.service
+  id = "projects/psm-platform-dev/locations/us-central1/services/gemini"
+}
+
+import {
+  to = module.psm_portal.module.sa.google_service_account.app
+  id = "projects/psm-platform-dev/serviceAccounts/psm-portal-svc@psm-platform-dev.iam.gserviceaccount.com"
+}
+
+import {
+  to = module.psm_portal.module.service.google_cloud_run_v2_service.service
+  id = "projects/psm-platform-dev/locations/us-central1/services/psm-portal"
 }

@@ -84,6 +84,20 @@ module "psm_portal" {
   ]
 }
 
+module "example" {
+  source     = "../../modules/app"
+  project_id = var.project_id
+  app_name   = "example"
+  roles      = []
+}
+
+module "example2" {
+  source     = "../../modules/app"
+  project_id = var.project_id
+  app_name   = "example2"
+  roles      = []
+}
+
 # ─── Shared Artifact Registry repo ──────────────────────────────────────────
 # One repo named "apps" holds images for all services.
 
