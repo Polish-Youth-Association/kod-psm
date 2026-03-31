@@ -35,10 +35,12 @@ module "service" {
   region     = var.region
   sa_email   = module.sa.service_account_email
 
+  allow_domain_invokers = false  # Access controlled via IAP, not domain IAM
+
   env_vars = {
-    API_BASE                = var.api_base_url
+    API_BASE                  = var.api_base_url
     VOLUNTEER_ONBOARDING_BASE = var.volunteer_onboarding_url
-    MEMBER_ONBOARDING_BASE  = var.member_onboarding_url
-    GEMINI_BASE             = var.gemini_url
+    MEMBER_ONBOARDING_BASE    = var.member_onboarding_url
+    GEMINI_BASE               = var.gemini_url
   }
 }
