@@ -11,7 +11,6 @@ env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_PROD }}
   IMAGE_REPO: apps
   REGION: us-central1
-  ALLOW_SA_CREATE: true
 
 jobs:
   deploy:
@@ -99,10 +98,6 @@ jobs:
           echo "Apps to deploy: $APPS"
 
           for APP in $APPS; do
-            echo "::group::Applying IAM for $APP"
-            node scripts/apply-iam.js --app "$APP" --project "${GCP_PROJECT_ID}"
-            echo "::endgroup::"
-
             SERVICE="$APP"
             IMAGE="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/${IMAGE_REPO}/${APP}:${GITHUB_SHA}"
 
@@ -114,20 +109,11 @@ jobs:
             echo "::endgroup::"
 
             echo "::group::Deploying $SERVICE to Cloud Run"
-            gcloud run deploy "$SERVICE" \
+            gcloud run services update "$SERVICE" \
               --image="$IMAGE" \
               --region="$GCP_REGION" \
               --platform=managed \
               --project="$GCP_PROJECT_ID"
-            echo "::endgroup::"
-
-            echo "::group::Wiring domain access for $SERVICE"
-            gcloud run services add-iam-policy-binding "$SERVICE" \
-              --region "$REGION" \
-              --member="domain:polishyouth.org" \
-              --role="roles/run.invoker" \
-              --project="$GCP_PROJECT_ID" \
-              --quiet
             echo "::endgroup::"
           done
 
