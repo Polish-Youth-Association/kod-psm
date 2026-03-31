@@ -2,6 +2,10 @@ resource "google_service_account" "app" {
   project      = var.project_id
   account_id   = "${var.app_name}-svc"
   display_name = "${var.app_name} Cloud Run service account"
+
+  lifecycle {
+    ignore_changes = [display_name]
+  }
 }
 
 resource "google_project_iam_member" "app_roles" {
