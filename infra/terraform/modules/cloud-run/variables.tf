@@ -72,3 +72,9 @@ variable "allow_domain_invokers" {
   type        = bool
   default     = true
 }
+
+variable "annotations" {
+  description = "Annotations to set on the Cloud Run service"
+  type        = map(string)
+  default     = {}
+}

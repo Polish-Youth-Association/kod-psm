@@ -1,7 +1,8 @@
 resource "google_cloud_run_v2_service" "service" {
-  project  = var.project_id
-  name     = var.app_name
-  location = var.region
+  project     = var.project_id
+  name        = var.app_name
+  location    = var.region
+  annotations = var.annotations
 
   template {
     service_account = var.sa_email
@@ -63,6 +64,7 @@ resource "google_cloud_run_v2_service" "service" {
       template[0].containers[0].image,
       template[0].labels,
       template[0].annotations,
+      labels,
       client,
       client_version,
     ]
