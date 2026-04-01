@@ -37,6 +37,10 @@ module "service" {
 
   allow_domain_invokers = false  # Access controlled via IAP, not domain IAM
 
+  annotations = {
+    "run.googleapis.com/iap-enabled" = "true"
+  }
+
   env_vars = {
     API_BASE                  = var.api_base_url
     VOLUNTEER_ONBOARDING_BASE = var.volunteer_onboarding_url
