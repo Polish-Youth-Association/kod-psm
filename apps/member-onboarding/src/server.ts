@@ -549,8 +549,31 @@ app.get('/api/members/pending', async (_req: Request, res: Response) => {
       .limit(100)
       .get();
 
+    // For dup detection across the full collection, fetch the email index of all
+    // members. Cheap because it's just a small projection.
+    const allEmailsSnap = await db.collection('members').select('email', 'fullName').get();
+    const emailCounts = new Map<string, number>();
+    const nameCounts = new Map<string, number>();
+    for (const d of allEmailsSnap.docs) {
+      const data = d.data();
+      const email = String(data.email ?? '').trim().toLowerCase();
+      const name  = String(data.fullName ?? '').trim().toLowerCase();
+      if (email) emailCounts.set(email, (emailCounts.get(email) ?? 0) + 1);
+      if (name)  nameCounts.set(name,   (nameCounts.get(name)   ?? 0) + 1);
+    }
+
     const members = snap.docs.map((d) => {
       const data = d.data();
+      const email = String(data.email ?? '').trim().toLowerCase();
+      const name  = String(data.fullName ?? '').trim().toLowerCase();
+
+      const flags: string[] = [];
+      if (email && (emailCounts.get(email) ?? 0) > 1) flags.push('duplicate_email');
+      if (name  && (nameCounts.get(name)   ?? 0) > 1) flags.push('duplicate_name');
+      if (!data.wixContactId)                          flags.push('no_wix_contact');
+      if (data.wixAttachStatus === 'failed')           flags.push('wix_attach_failed');
+      if (data.wixFieldsUpdated === false && data.wixContactId) flags.push('wix_fields_not_updated');
+
       return {
         docId: d.id,
         memberId:     data.memberId,
@@ -564,6 +587,10 @@ app.get('/api/members/pending', async (_req: Request, res: Response) => {
         phone:        data.phone,
         certStatus:   data.certStatus,
         createdAt:    data.createdAt,
+        wixContactId: data.wixContactId ?? null,
+        wixAttachStatus: data.wixAttachStatus ?? null,
+        wixFieldsUpdated: data.wixFieldsUpdated ?? false,
+        flags,
       };
     });
 

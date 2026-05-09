@@ -21,6 +21,33 @@ type Member = {
   phone?: string;
   certStatus: "generated" | "failed" | "pending";
   createdAt: unknown;
+  wixContactId?: string | null;
+  wixAttachStatus?: "attached" | "skipped" | "failed" | null;
+  wixFieldsUpdated?: boolean;
+  flags?: string[];
+};
+
+const FLAG_LABELS: Record<string, { label: string; tooltip: string }> = {
+  duplicate_email: {
+    label: "Possible duplicate email",
+    tooltip: "Another member record uses the same email — double-check Wix and merge / delete as needed.",
+  },
+  duplicate_name: {
+    label: "Possible duplicate name",
+    tooltip: "Another member record uses the same full name. Could be a coincidence or a re-submission.",
+  },
+  no_wix_contact: {
+    label: "No matching Wix contact",
+    tooltip: "Server couldn't find a Wix contact for this email — verify the email matches what's in Wix.",
+  },
+  wix_attach_failed: {
+    label: "Wix attachment failed",
+    tooltip: "Certificate PDF wasn't attached to the Wix contact's Attachments tab. Re-send to retry.",
+  },
+  wix_fields_not_updated: {
+    label: "Wix fields not updated",
+    tooltip: "Custom fields (Member ID / Certificate URL) didn't update on the Wix contact.",
+  },
 };
 
 export default function OnboardingQueuePage() {
@@ -154,6 +181,22 @@ export default function OnboardingQueuePage() {
               key={member.docId}
               className="bg-white border border-brand-border rounded-xl p-5 shadow-sm"
             >
+              {member.flags && member.flags.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {member.flags.map((flag) => {
+                    const meta = FLAG_LABELS[flag] ?? { label: flag, tooltip: "" };
+                    return (
+                      <span
+                        key={flag}
+                        title={meta.tooltip}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 cursor-help"
+                      >
+                        ⚠ {meta.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
               <div className="flex flex-wrap gap-6 mb-4">
                 {/* Identity */}
                 <div className="flex-1 min-w-[200px]">
