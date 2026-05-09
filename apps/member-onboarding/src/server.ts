@@ -277,6 +277,37 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       const doc = existingSnap.docs[0];
       const data = doc.data();
       console.log(`Intake dedup hit: ${data.memberId} for ${normalizedEmail}`);
+
+      // If a contactId was provided and the previous attach didn't succeed,
+      // upload the existing cert to the Wix contact's Attachments tab now.
+      let dedupAttachStatus: 'attached' | 'skipped' | 'failed' = 'skipped';
+      if (contactId && data.certObjectPath && data.wixAttachStatus !== 'attached') {
+        try {
+          const certBytes = await storage.getFile(data.certObjectPath);
+          const result = await attachCertificateToWixContact({
+            contactId: String(contactId),
+            memberId: data.memberId,
+            certBytes,
+          });
+          if (result.ok) {
+            dedupAttachStatus = 'attached';
+            console.log(`Attached cert to Wix contact ${contactId} (file ${result.fileId}) on dedup`);
+            await doc.ref.update({
+              wixContactId: contactId,
+              wixAttachStatus: 'attached',
+              wixAttachFileId: result.fileId ?? null,
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          } else {
+            dedupAttachStatus = 'failed';
+            console.warn(`Wix attachment failed on dedup for ${data.memberId}:`, result.reason);
+          }
+        } catch (attachErr) {
+          dedupAttachStatus = 'failed';
+          console.warn(`Wix attachment threw on dedup for ${data.memberId}:`, attachErr);
+        }
+      }
+
       return res.status(200).json({
         ok: true,
         memberId: data.memberId,
@@ -284,6 +315,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
         certStatus: data.certStatus ?? null,
         certUrl: data.certUrl ?? null,
         alreadyExisted: true,
+        wixAttachStatus: dedupAttachStatus,
       });
     }
 
