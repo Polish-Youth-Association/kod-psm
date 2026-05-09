@@ -575,6 +575,28 @@ app.get('/api/members/pending', async (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// DELETE /api/members/:docId — remove a member from the queue.
+// Deletes the Firestore doc only. The cert PDF in GCS is preserved (cheap
+// safety net; can be regenerated). Wix contact is not touched.
+// ---------------------------------------------------------------------------
+app.delete('/api/members/:docId', async (req: Request, res: Response) => {
+  try {
+    const { docId } = req.params;
+    const memberRef = db.collection('members').doc(docId);
+    const snap = await memberRef.get();
+    if (!snap.exists) {
+      return res.status(404).json({ ok: false, error: 'member not found' });
+    }
+    await memberRef.delete();
+    console.log(`Deleted member ${snap.data()?.memberId ?? docId}`);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error('Delete member error:', err);
+    return res.status(500).json({ ok: false, error: err?.message ?? String(err) });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // POST /api/members/:docId/approve — admin verifies details and triggers email
 // Body: { firstNamePolish }
 // ---------------------------------------------------------------------------

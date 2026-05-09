@@ -30,6 +30,7 @@ export default function OnboardingQueuePage() {
 
   // Per-row approval state
   const [approving, setApproving] = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
   const [polishNames, setPolishNames] = useState<Record<string, string>>({});
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [rowSuccess, setRowSuccess] = useState<Record<string, string>>({});
@@ -84,6 +85,28 @@ export default function OnboardingQueuePage() {
       setRowErrors((prev) => ({ ...prev, [member.docId]: e?.message ?? String(e) }));
     } finally {
       setApproving((prev) => ({ ...prev, [member.docId]: false }));
+    }
+  }
+
+  async function handleDelete(member: Member) {
+    const confirmed = window.confirm(
+      `Delete ${member.fullName} (${member.memberId}) from the queue?\n\nThis removes the Firestore record. The certificate PDF in storage and the Wix contact are preserved.`
+    );
+    if (!confirmed) return;
+
+    setDeleting((prev) => ({ ...prev, [member.docId]: true }));
+    setRowErrors((prev) => ({ ...prev, [member.docId]: "" }));
+
+    try {
+      const res = await fetch(`/api/onboarding/queue/${member.docId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error ?? "Delete failed");
+
+      setMembers((prev) => prev.filter((m) => m.docId !== member.docId));
+    } catch (e: any) {
+      setRowErrors((prev) => ({ ...prev, [member.docId]: e?.message ?? String(e) }));
+    } finally {
+      setDeleting((prev) => ({ ...prev, [member.docId]: false }));
     }
   }
 
@@ -190,10 +213,17 @@ export default function OnboardingQueuePage() {
                     </div>
                     <button
                       onClick={() => handleApprove(member)}
-                      disabled={approving[member.docId]}
+                      disabled={approving[member.docId] || deleting[member.docId]}
                       className="mt-5 px-5 py-2 rounded-lg text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors disabled:opacity-50"
                     >
                       {approving[member.docId] ? "Sending…" : "Approve & Send Email"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(member)}
+                      disabled={approving[member.docId] || deleting[member.docId]}
+                      className="mt-5 px-4 py-2 rounded-lg text-sm font-medium border border-brand-border text-brand-gray hover:border-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
+                    >
+                      {deleting[member.docId] ? "Deleting…" : "Delete"}
                     </button>
                   </div>
                 )}
