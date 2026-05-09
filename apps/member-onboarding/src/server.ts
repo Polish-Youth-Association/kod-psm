@@ -162,6 +162,79 @@ async function callCertificateGenerator(
 }
 
 // ---------------------------------------------------------------------------
+// Wix Contacts API helpers (REST v4)
+// ---------------------------------------------------------------------------
+function wixHeaders(): Record<string, string> | null {
+  const apiKey   = process.env.WIX_API_KEY?.trim();
+  const accountId = process.env.WIX_ACCOUNT_ID?.trim();
+  const siteId    = process.env.WIX_SITE_ID?.trim();
+  if (!apiKey || !accountId || !siteId) return null;
+  return {
+    'Authorization': apiKey,
+    'wix-account-id': accountId,
+    'wix-site-id': siteId,
+  };
+}
+
+// Find a Wix contact by email. Returns { id, revision } or null.
+async function findWixContactByEmail(
+  email: string,
+): Promise<{ id: string; revision: number } | null> {
+  const headers = wixHeaders();
+  if (!headers) return null;
+
+  const resp = await fetch('https://www.wixapis.com/contacts/v4/contacts/query', {
+    method: 'POST',
+    headers: { ...headers, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      query: { filter: { 'info.emails.email': email.trim().toLowerCase() } },
+    }),
+  });
+
+  if (!resp.ok) {
+    console.warn(`Wix contact query failed ${resp.status}: ${await resp.text()}`);
+    return null;
+  }
+
+  const json = await resp.json() as {
+    contacts?: Array<{ id: string; revision?: number; _id?: string; _revision?: number }>;
+  };
+  const c = json.contacts?.[0];
+  if (!c) return null;
+
+  const id = c.id ?? c._id;
+  const revision = c.revision ?? c._revision ?? 0;
+  if (!id) return null;
+  return { id, revision: Number(revision) };
+}
+
+// Patch a contact's extended (custom) fields. Best-effort.
+async function updateWixContactExtendedFields(
+  contactId: string,
+  revision: number,
+  fields: Record<string, string>,
+): Promise<{ ok: boolean; reason?: string }> {
+  const headers = wixHeaders();
+  if (!headers) return { ok: false, reason: 'no_credentials' };
+
+  const resp = await fetch(`https://www.wixapis.com/contacts/v4/contacts/${encodeURIComponent(contactId)}`, {
+    method: 'PATCH',
+    headers: { ...headers, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      contact: {
+        revision,
+        info: { extendedFields: { items: fields } },
+      },
+    }),
+  });
+
+  if (!resp.ok) {
+    return { ok: false, reason: `${resp.status}: ${await resp.text()}` };
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 // Wix contact attachment upload (best-effort)
 // ---------------------------------------------------------------------------
 // Two-step: POST /contacts/v4/attachments/{contactId}/upload-url to get a
@@ -172,21 +245,11 @@ async function attachCertificateToWixContact(params: {
   memberId: string;
   certBytes: Uint8Array;
 }): Promise<{ ok: boolean; reason?: string; fileId?: string }> {
-  const apiKey   = process.env.WIX_API_KEY?.trim();
-  const accountId = process.env.WIX_ACCOUNT_ID?.trim();
-  const siteId    = process.env.WIX_SITE_ID?.trim();
-
-  if (!apiKey || !accountId || !siteId) {
-    return { ok: false, reason: 'wix_credentials_not_configured' };
-  }
+  const headers = wixHeaders();
+  if (!headers) return { ok: false, reason: 'wix_credentials_not_configured' };
 
   const fileName = `PSM_Certificate_${params.memberId}.pdf`;
   const mimeType = 'application/pdf';
-  const wixHeaders = {
-    'Authorization': apiKey,
-    'wix-account-id': accountId,
-    'wix-site-id': siteId,
-  };
 
   // 1) Generate upload URL
   const uploadUrlEndpoint =
@@ -194,7 +257,7 @@ async function attachCertificateToWixContact(params: {
 
   const genResp = await fetch(uploadUrlEndpoint, {
     method: 'POST',
-    headers: { ...wixHeaders, 'content-type': 'application/json' },
+    headers: { ...headers, 'content-type': 'application/json' },
     body: JSON.stringify({ fileName, mimeType }),
   });
 
@@ -228,6 +291,82 @@ async function attachCertificateToWixContact(params: {
 }
 
 // ---------------------------------------------------------------------------
+// Wix contact sync orchestrator: lookup → update fields → attach PDF
+// ---------------------------------------------------------------------------
+type WixSyncResult = {
+  contactId?: string;
+  attachStatus: 'attached' | 'skipped' | 'failed';
+  attachFileId?: string;
+  fieldsUpdated: boolean;
+};
+
+async function syncWixContact(params: {
+  email: string;
+  memberId: string;
+  certUrl?: string;
+  certObjectPath?: string;
+  skipAttach?: boolean;
+}): Promise<WixSyncResult> {
+  const result: WixSyncResult = { attachStatus: 'skipped', fieldsUpdated: false };
+
+  if (!wixHeaders()) {
+    console.warn('Wix credentials not configured — skipping contact sync');
+    return result;
+  }
+
+  // Wix Form widget creates the contact synchronously on submit, but the
+  // contact record may take a moment to be queryable. Brief retry loop.
+  let contact: { id: string; revision: number } | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    contact = await findWixContactByEmail(params.email);
+    if (contact) break;
+    if (attempt < 4) await new Promise((r) => setTimeout(r, 800));
+  }
+  if (!contact) {
+    console.warn(`No Wix contact found for ${params.email} after retries`);
+    return result;
+  }
+  result.contactId = contact.id;
+
+  // Update custom fields (best-effort)
+  const fields: Record<string, string> = {
+    [WIX_FIELD_MEMBER_ID]: params.memberId,
+  };
+  if (params.certUrl) fields[WIX_FIELD_CERT_URL] = params.certUrl;
+  const fieldUpdate = await updateWixContactExtendedFields(contact.id, contact.revision, fields);
+  if (fieldUpdate.ok) {
+    result.fieldsUpdated = true;
+  } else {
+    console.warn(`Wix field update failed for ${params.memberId}:`, fieldUpdate.reason);
+  }
+
+  // Attach the cert PDF (best-effort)
+  if (!params.skipAttach && params.certObjectPath) {
+    try {
+      const certBytes = await storage.getFile(params.certObjectPath);
+      const attach = await attachCertificateToWixContact({
+        contactId: contact.id,
+        memberId: params.memberId,
+        certBytes,
+      });
+      if (attach.ok) {
+        result.attachStatus = 'attached';
+        result.attachFileId = attach.fileId;
+        console.log(`Attached cert to Wix contact ${contact.id} (file ${attach.fileId})`);
+      } else {
+        result.attachStatus = 'failed';
+        console.warn(`Wix attachment failed for ${params.memberId}:`, attach.reason);
+      }
+    } catch (err) {
+      result.attachStatus = 'failed';
+      console.warn(`Wix attachment threw for ${params.memberId}:`, err);
+    }
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Express app
 // ---------------------------------------------------------------------------
 const app = express();
@@ -245,9 +384,13 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // POST /api/intake — Wix webhook
 // Body: { apiKey, fullName, email, birthday?, phone?, address: { line1?, city?, state?, postalCode, country } }
 // ---------------------------------------------------------------------------
+// Custom field keys for Wix contacts (created in the Wix dashboard).
+const WIX_FIELD_MEMBER_ID = 'custom.membership_id_cvtyjgiautctnhvxvwcpo';
+const WIX_FIELD_CERT_URL  = 'custom.certificate_url';
+
 app.post('/api/intake', async (req: Request, res: Response) => {
   try {
-    const { apiKey, fullName, email, birthday, phone, address, contactId } = req.body ?? {};
+    const { apiKey, fullName, email, birthday, phone, address } = req.body ?? {};
 
     // Auth
     const expectedKey = process.env.WIX_INTAKE_SECRET;
@@ -278,34 +421,22 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       const data = doc.data();
       console.log(`Intake dedup hit: ${data.memberId} for ${normalizedEmail}`);
 
-      // If a contactId was provided and the previous attach didn't succeed,
-      // upload the existing cert to the Wix contact's Attachments tab now.
-      let dedupAttachStatus: 'attached' | 'skipped' | 'failed' = 'skipped';
-      if (contactId && data.certObjectPath && data.wixAttachStatus !== 'attached') {
-        try {
-          const certBytes = await storage.getFile(data.certObjectPath);
-          const result = await attachCertificateToWixContact({
-            contactId: String(contactId),
-            memberId: data.memberId,
-            certBytes,
-          });
-          if (result.ok) {
-            dedupAttachStatus = 'attached';
-            console.log(`Attached cert to Wix contact ${contactId} (file ${result.fileId}) on dedup`);
-            await doc.ref.update({
-              wixContactId: contactId,
-              wixAttachStatus: 'attached',
-              wixAttachFileId: result.fileId ?? null,
-              updatedAt: FieldValue.serverTimestamp(),
-            });
-          } else {
-            dedupAttachStatus = 'failed';
-            console.warn(`Wix attachment failed on dedup for ${data.memberId}:`, result.reason);
-          }
-        } catch (attachErr) {
-          dedupAttachStatus = 'failed';
-          console.warn(`Wix attachment threw on dedup for ${data.memberId}:`, attachErr);
-        }
+      const dedupSync = await syncWixContact({
+        email: normalizedEmail,
+        memberId: data.memberId,
+        certUrl: data.certUrl,
+        certObjectPath: data.certObjectPath,
+        skipAttach: data.wixAttachStatus === 'attached',
+      });
+
+      if (dedupSync.contactId || dedupSync.attachStatus === 'attached') {
+        await doc.ref.update({
+          wixContactId: dedupSync.contactId ?? data.wixContactId ?? null,
+          wixAttachStatus: dedupSync.attachStatus,
+          wixAttachFileId: dedupSync.attachFileId ?? data.wixAttachFileId ?? null,
+          wixFieldsUpdated: dedupSync.fieldsUpdated,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
       }
 
       return res.status(200).json({
@@ -315,7 +446,9 @@ app.post('/api/intake', async (req: Request, res: Response) => {
         certStatus: data.certStatus ?? null,
         certUrl: data.certUrl ?? null,
         alreadyExisted: true,
-        wixAttachStatus: dedupAttachStatus,
+        wixContactId: dedupSync.contactId ?? null,
+        wixAttachStatus: dedupSync.attachStatus,
+        wixFieldsUpdated: dedupSync.fieldsUpdated,
       });
     }
 
@@ -349,30 +482,14 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       certStatus = 'failed';
     }
 
-    // Attach the PDF to the Wix contact's Attachments tab (best-effort).
-    let wixAttachStatus: 'attached' | 'skipped' | 'failed' = 'skipped';
-    let wixAttachFileId: string | undefined;
-    if (contactId && certStatus === 'generated' && certObjectPath) {
-      try {
-        const certBytes = await storage.getFile(certObjectPath);
-        const result = await attachCertificateToWixContact({
-          contactId: String(contactId),
-          memberId,
-          certBytes,
-        });
-        if (result.ok) {
-          wixAttachStatus = 'attached';
-          wixAttachFileId = result.fileId;
-          console.log(`Attached cert to Wix contact ${contactId} (file ${result.fileId})`);
-        } else {
-          wixAttachStatus = 'failed';
-          console.warn(`Wix attachment failed for ${memberId}:`, result.reason);
-        }
-      } catch (attachErr) {
-        wixAttachStatus = 'failed';
-        console.warn(`Wix attachment threw for ${memberId}:`, attachErr);
-      }
-    }
+    // Sync Wix contact: look up by email, attach PDF, update custom fields.
+    const sync = await syncWixContact({
+      email: normalizedEmail,
+      memberId,
+      certUrl,
+      certObjectPath,
+      skipAttach: certStatus !== 'generated',
+    });
 
     // Persist member
     const memberRef = db.collection('members').doc();
@@ -392,9 +509,10 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       certLocalPath: certLocalPath ?? null,
       certBackend: certBackend ?? null,
       certUrl: certUrl ?? null,
-      wixContactId: contactId ?? null,
-      wixAttachStatus,
-      wixAttachFileId: wixAttachFileId ?? null,
+      wixContactId: sync.contactId ?? null,
+      wixAttachStatus: sync.attachStatus,
+      wixAttachFileId: sync.attachFileId ?? null,
+      wixFieldsUpdated: sync.fieldsUpdated,
       source: 'wix',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -407,7 +525,9 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       docId: memberRef.id,
       certStatus,
       certUrl: certUrl ?? null,
-      wixAttachStatus,
+      wixContactId: sync.contactId ?? null,
+      wixAttachStatus: sync.attachStatus,
+      wixFieldsUpdated: sync.fieldsUpdated,
     });
   } catch (err: any) {
     console.error('Intake error:', err);
