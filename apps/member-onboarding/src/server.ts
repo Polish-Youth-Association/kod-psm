@@ -221,10 +221,8 @@ async function updateWixContactExtendedFields(
     method: 'PATCH',
     headers: { ...headers, 'content-type': 'application/json' },
     body: JSON.stringify({
-      contact: {
-        revision,
-        info: { extendedFields: { items: fields } },
-      },
+      revision,
+      info: { extendedFields: { items: fields } },
     }),
   });
 
@@ -268,13 +266,16 @@ async function attachCertificateToWixContact(params: {
     };
   }
 
-  const genJson = await genResp.json() as { uploadUrl?: string; fileId?: string };
-  if (!genJson.uploadUrl) {
+  const genJson = await genResp.json() as Record<string, any>;
+  const uploadUrl: string | undefined = genJson.uploadUrl;
+  const fileId: string | undefined =
+    genJson.fileId ?? genJson.attachmentId ?? genJson.attachment?.id ?? genJson.id;
+  if (!uploadUrl) {
     return { ok: false, reason: 'no_upload_url_in_response' };
   }
 
   // 2) PUT the PDF bytes to the pre-signed URL
-  const putResp = await fetch(genJson.uploadUrl, {
+  const putResp = await fetch(uploadUrl, {
     method: 'PUT',
     headers: { 'content-type': mimeType },
     body: params.certBytes as any,
@@ -287,7 +288,7 @@ async function attachCertificateToWixContact(params: {
     };
   }
 
-  return { ok: true, fileId: genJson.fileId };
+  return { ok: true, fileId };
 }
 
 // ---------------------------------------------------------------------------
