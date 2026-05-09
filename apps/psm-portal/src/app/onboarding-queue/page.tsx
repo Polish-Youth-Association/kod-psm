@@ -27,27 +27,49 @@ type Member = {
   flags?: string[];
 };
 
-const FLAG_LABELS: Record<string, { label: string; tooltip: string }> = {
-  duplicate_email: {
-    label: "Possible duplicate email",
-    tooltip: "Another member record uses the same email — double-check Wix and merge / delete as needed.",
-  },
-  duplicate_name: {
-    label: "Possible duplicate name",
-    tooltip: "Another member record uses the same full name. Could be a coincidence or a re-submission.",
-  },
-  no_wix_contact: {
-    label: "No matching Wix contact",
-    tooltip: "Server couldn't find a Wix contact for this email — verify the email matches what's in Wix.",
-  },
+type FlagSeverity = "high" | "medium" | "low";
+
+const FLAG_LABELS: Record<string, { label: string; tooltip: string; severity: FlagSeverity }> = {
+  // High severity — system errors that need fixing
   wix_attach_failed: {
     label: "Wix attachment failed",
     tooltip: "Certificate PDF wasn't attached to the Wix contact's Attachments tab. Re-send to retry.",
+    severity: "high",
   },
   wix_fields_not_updated: {
     label: "Wix fields not updated",
     tooltip: "Custom fields (Member ID / Certificate URL) didn't update on the Wix contact.",
+    severity: "high",
   },
+  // Medium severity — likely user-data issues, double-check
+  duplicate_email: {
+    label: "Possible duplicate email",
+    tooltip: "Another member record uses the same email — double-check Wix and merge / delete as needed.",
+    severity: "medium",
+  },
+  no_wix_contact: {
+    label: "No matching Wix contact",
+    tooltip: "Server couldn't find a Wix contact for this email — verify the email matches what's in Wix.",
+    severity: "medium",
+  },
+  // Low severity — informational
+  duplicate_name: {
+    label: "Possible duplicate name",
+    tooltip: "Another member record uses the same full name. Could be a coincidence or a re-submission.",
+    severity: "low",
+  },
+};
+
+const SEVERITY_STYLES: Record<FlagSeverity, string> = {
+  high:   "bg-red-100 text-red-800 border-red-200",
+  medium: "bg-amber-100 text-amber-800 border-amber-200",
+  low:    "bg-blue-100 text-blue-800 border-blue-200",
+};
+
+const SEVERITY_ICON: Record<FlagSeverity, string> = {
+  high:   "✖",
+  medium: "⚠",
+  low:    "ⓘ",
 };
 
 export default function OnboardingQueuePage() {
@@ -184,14 +206,14 @@ export default function OnboardingQueuePage() {
               {member.flags && member.flags.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
                   {member.flags.map((flag) => {
-                    const meta = FLAG_LABELS[flag] ?? { label: flag, tooltip: "" };
+                    const meta = FLAG_LABELS[flag] ?? { label: flag, tooltip: "", severity: "medium" as FlagSeverity };
                     return (
                       <span
                         key={flag}
                         title={meta.tooltip}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 cursor-help"
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border cursor-help ${SEVERITY_STYLES[meta.severity]}`}
                       >
-                        ⚠ {meta.label}
+                        {SEVERITY_ICON[meta.severity]} {meta.label}
                       </span>
                     );
                   })}
