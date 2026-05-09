@@ -197,6 +197,30 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       });
     }
 
+    const normalizedEmail = (email as string).trim().toLowerCase();
+
+    // Idempotency: return the existing member if one already exists for this email,
+    // so resubmissions don't allocate a fresh memberId or overwrite the Wix contact.
+    // Equality on a single field uses an auto-managed index — no composite index needed.
+    const existingSnap = await db
+      .collection('members')
+      .where('email', '==', normalizedEmail)
+      .limit(1)
+      .get();
+    if (!existingSnap.empty) {
+      const doc = existingSnap.docs[0];
+      const data = doc.data();
+      console.log(`Intake dedup hit: ${data.memberId} for ${normalizedEmail}`);
+      return res.status(200).json({
+        ok: true,
+        memberId: data.memberId,
+        docId: doc.id,
+        certStatus: data.certStatus ?? null,
+        certUrl: data.certUrl ?? null,
+        alreadyExisted: true,
+      });
+    }
+
     // Resolve prefix
     const prefix = getMemberPrefix({ country: address.country, postalCode: address.postalCode })
       ?? 'DNY'; // fallback to HQ
@@ -235,7 +259,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       fullName,
       firstName,
       lastName,
-      email: (email as string).trim().toLowerCase(),
+      email: normalizedEmail,
       birthday: birthday ?? null,
       phone: phone ?? null,
       address,
