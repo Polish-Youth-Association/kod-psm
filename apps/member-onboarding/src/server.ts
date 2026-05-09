@@ -122,7 +122,7 @@ async function callCertificateGenerator(
   memberId: string,
   firstName: string,
   lastName: string,
-): Promise<{ objectPath?: string; localPath?: string; backend?: string }> {
+): Promise<{ objectPath?: string; localPath?: string; backend?: string; url?: string }> {
   const base = process.env.CERTIFICATE_GENERATOR_BASE?.trim();
   if (!base) {
     console.warn('CERTIFICATE_GENERATOR_BASE not set — skipping cert generation');
@@ -157,6 +157,7 @@ async function callCertificateGenerator(
     objectPath: json.objectPath as string | undefined,
     localPath:  json.localPath  as string | undefined,
     backend:    json.backend    as string | undefined,
+    url:        json.url        as string | undefined,
   };
 }
 
@@ -211,6 +212,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
     let certObjectPath: string | undefined;
     let certLocalPath: string | undefined;
     let certBackend: string | undefined;
+    let certUrl: string | undefined;
     let certStatus: 'generated' | 'failed' | 'pending' = 'pending';
 
     try {
@@ -218,6 +220,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       certObjectPath = cert.objectPath;
       certLocalPath  = cert.localPath;
       certBackend    = cert.backend;
+      certUrl        = cert.url;
       certStatus     = 'generated';
     } catch (certErr) {
       console.error('Certificate generation failed for', memberId, certErr);
@@ -241,13 +244,20 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       certObjectPath: certObjectPath ?? null,
       certLocalPath: certLocalPath ?? null,
       certBackend: certBackend ?? null,
+      certUrl: certUrl ?? null,
       source: 'wix',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
 
     console.log(`Intake complete: ${memberId} (${prefix}) for ${email}`);
-    return res.status(201).json({ ok: true, memberId, docId: memberRef.id });
+    return res.status(201).json({
+      ok: true,
+      memberId,
+      docId: memberRef.id,
+      certStatus,
+      certUrl: certUrl ?? null,
+    });
   } catch (err: any) {
     console.error('Intake error:', err);
     return res.status(500).json({ ok: false, error: err?.message ?? String(err) });
@@ -332,6 +342,7 @@ app.post('/api/members/:docId/approve', async (req: Request, res: Response) => {
             certObjectPath: cert.objectPath,
             certLocalPath: cert.localPath ?? null,
             certBackend: cert.backend ?? null,
+            certUrl: cert.url ?? null,
             updatedAt: FieldValue.serverTimestamp(),
           });
         }

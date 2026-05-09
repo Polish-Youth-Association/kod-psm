@@ -99,6 +99,7 @@ app.post('/generate-certificate', async (req, res) => {
         lastName,
         generatedAt: new Date().toISOString(),
       },
+      { public: true },
     );
 
     // Upload to Google Drive (best-effort — does not block or fail the response)

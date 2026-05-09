@@ -18,6 +18,11 @@ export type StorageConfig = {
   localBaseDir: string; // where to store files in dev
 };
 
+export type SaveOptions = {
+  /** When true and backend is GCS, mark the object as publicly readable. No-op for local backend. */
+  public?: boolean;
+};
+
 export type StorageClient = {
   backend: StorageBackend;
   saveFile: (
@@ -25,6 +30,7 @@ export type StorageClient = {
     objectPath: string, // e.g. "certificates/123.pdf"
     contentType?: string,
     metadata?: Record<string, string>,
+    options?: SaveOptions,
   ) => Promise<SaveResult>;
   getFile: (objectPath: string) => Promise<Buffer>;
 };
@@ -49,6 +55,7 @@ export function initStorage(config: StorageConfig): StorageClient {
     objectPath: string,
     contentType = 'application/octet-stream',
     metadata: Record<string, string> = {},
+    options: SaveOptions = {},
   ): Promise<SaveResult> {
     if (bucket && bucketName) {
       const file = bucket.file(objectPath);
@@ -57,6 +64,18 @@ export function initStorage(config: StorageConfig): StorageClient {
         contentType,
         metadata: { metadata },
       });
+
+      if (options.public) {
+        try {
+          await file.makePublic();
+        } catch (err) {
+          console.warn(
+            `Could not make ${objectPath} public — bucket may have Uniform Bucket-Level Access enabled. ` +
+            `Grant Storage Object Viewer to allUsers at the bucket level instead.`,
+            err,
+          );
+        }
+      }
 
       return {
         backend: 'gcs',
