@@ -162,6 +162,72 @@ async function callCertificateGenerator(
 }
 
 // ---------------------------------------------------------------------------
+// Wix contact attachment upload (best-effort)
+// ---------------------------------------------------------------------------
+// Two-step: POST /contacts/v4/attachments/{contactId}/upload-url to get a
+// pre-signed uploadUrl, then PUT the PDF bytes there. The file then appears
+// in the contact's Attachments tab in the Wix dashboard.
+async function attachCertificateToWixContact(params: {
+  contactId: string;
+  memberId: string;
+  certBytes: Uint8Array;
+}): Promise<{ ok: boolean; reason?: string; fileId?: string }> {
+  const apiKey   = process.env.WIX_API_KEY?.trim();
+  const accountId = process.env.WIX_ACCOUNT_ID?.trim();
+  const siteId    = process.env.WIX_SITE_ID?.trim();
+
+  if (!apiKey || !accountId || !siteId) {
+    return { ok: false, reason: 'wix_credentials_not_configured' };
+  }
+
+  const fileName = `PSM_Certificate_${params.memberId}.pdf`;
+  const mimeType = 'application/pdf';
+  const wixHeaders = {
+    'Authorization': apiKey,
+    'wix-account-id': accountId,
+    'wix-site-id': siteId,
+  };
+
+  // 1) Generate upload URL
+  const uploadUrlEndpoint =
+    `https://www.wixapis.com/contacts/v4/attachments/${encodeURIComponent(params.contactId)}/upload-url`;
+
+  const genResp = await fetch(uploadUrlEndpoint, {
+    method: 'POST',
+    headers: { ...wixHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({ fileName, mimeType }),
+  });
+
+  if (!genResp.ok) {
+    return {
+      ok: false,
+      reason: `generate_upload_url_failed_${genResp.status}: ${await genResp.text()}`,
+    };
+  }
+
+  const genJson = await genResp.json() as { uploadUrl?: string; fileId?: string };
+  if (!genJson.uploadUrl) {
+    return { ok: false, reason: 'no_upload_url_in_response' };
+  }
+
+  // 2) PUT the PDF bytes to the pre-signed URL
+  const putResp = await fetch(genJson.uploadUrl, {
+    method: 'PUT',
+    headers: { 'content-type': mimeType },
+    body: params.certBytes as any,
+  });
+
+  if (!putResp.ok) {
+    return {
+      ok: false,
+      reason: `upload_put_failed_${putResp.status}: ${await putResp.text()}`,
+    };
+  }
+
+  return { ok: true, fileId: genJson.fileId };
+}
+
+// ---------------------------------------------------------------------------
 // Express app
 // ---------------------------------------------------------------------------
 const app = express();
@@ -181,7 +247,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 app.post('/api/intake', async (req: Request, res: Response) => {
   try {
-    const { apiKey, fullName, email, birthday, phone, address } = req.body ?? {};
+    const { apiKey, fullName, email, birthday, phone, address, contactId } = req.body ?? {};
 
     // Auth
     const expectedKey = process.env.WIX_INTAKE_SECRET;
@@ -251,6 +317,31 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       certStatus = 'failed';
     }
 
+    // Attach the PDF to the Wix contact's Attachments tab (best-effort).
+    let wixAttachStatus: 'attached' | 'skipped' | 'failed' = 'skipped';
+    let wixAttachFileId: string | undefined;
+    if (contactId && certStatus === 'generated' && certObjectPath) {
+      try {
+        const certBytes = await storage.getFile(certObjectPath);
+        const result = await attachCertificateToWixContact({
+          contactId: String(contactId),
+          memberId,
+          certBytes,
+        });
+        if (result.ok) {
+          wixAttachStatus = 'attached';
+          wixAttachFileId = result.fileId;
+          console.log(`Attached cert to Wix contact ${contactId} (file ${result.fileId})`);
+        } else {
+          wixAttachStatus = 'failed';
+          console.warn(`Wix attachment failed for ${memberId}:`, result.reason);
+        }
+      } catch (attachErr) {
+        wixAttachStatus = 'failed';
+        console.warn(`Wix attachment threw for ${memberId}:`, attachErr);
+      }
+    }
+
     // Persist member
     const memberRef = db.collection('members').doc();
     await memberRef.set({
@@ -269,6 +360,9 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       certLocalPath: certLocalPath ?? null,
       certBackend: certBackend ?? null,
       certUrl: certUrl ?? null,
+      wixContactId: contactId ?? null,
+      wixAttachStatus,
+      wixAttachFileId: wixAttachFileId ?? null,
       source: 'wix',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -281,6 +375,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       docId: memberRef.id,
       certStatus,
       certUrl: certUrl ?? null,
+      wixAttachStatus,
     });
   } catch (err: any) {
     console.error('Intake error:', err);
