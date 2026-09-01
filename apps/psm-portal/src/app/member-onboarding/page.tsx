@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef, useState } from "react";
+import { wixApi } from "@/lib/wixApi";
 
 type MemberOnboardingRecord = {
   id: string;
@@ -49,30 +50,19 @@ export default function MemberOnboardingPage() {
 
     setSubmitting(true);
     try {
-      const fd = new FormData();
-      fd.append("firstNamePolish", form.firstNamePolish.trim());
-      fd.append("firstNameEnglish", form.firstNameEnglish.trim());
-      fd.append("email", form.email.trim());
-      fd.append("memberId", form.memberId.trim());
-      if (certificate) {
-        fd.append("certificate", certificate);
-      }
-
-      const resp = await fetch("/api/onboarding/member", {
-        method: "POST",
-        body: fd
+      // NOTE: certificate attachment via this manual form is not yet supported in the static/Wix
+      // flow — the cert is delivered through the queue → approve path (which renders + attaches it).
+      // To support manual attachment, upload `certificate` to Wix Media and pass its URL as
+      // `certFileUrl` to sendMemberEmail.
+      const json = await wixApi.sendMemberEmail({
+        firstNamePolish: form.firstNamePolish.trim(),
+        firstNameEnglish: form.firstNameEnglish.trim(),
+        email: form.email.trim(),
+        memberId: form.memberId.trim(),
       });
 
-      const text = await resp.text();
-      let json: any = null;
-      try {
-        json = JSON.parse(text);
-      } catch {}
-
-      if (!resp.ok || !json?.ok) {
-        throw new Error(
-          json?.error ?? json?.body?.error ?? json?.message ?? "Backend rejected the request"
-        );
+      if (!json?.ok) {
+        throw new Error((json as any)?.error ?? "Backend rejected the request");
       }
 
       setRecords((prev) => [

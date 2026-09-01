@@ -1,26 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 
 export default function Home() {
-  const [result, setResult] = useState<string>("");
-
-  async function testExample() {
-    setResult("Calling /api/ping...");
-    try {
-      const res = await fetch("/api/ping", { cache: "no-store" });
-      const text = await res.text();
-      try {
-        setResult(JSON.stringify(JSON.parse(text), null, 2));
-      } catch {
-        setResult(`Non-JSON response (status ${res.status}):\n\n${text.slice(0, 800)}`);
-      }
-    } catch (e: any) {
-      setResult(`Error: ${e?.message ?? String(e)}`);
-    }
-  }
-
   return (
     <main className="max-w-4xl mx-auto px-6 py-10">
       {/* Hero */}
@@ -87,30 +69,6 @@ export default function Home() {
         </Link>
       </div>
 
-      {/* Roadmap note */}
-      <p className="text-sm text-brand-gray mb-8">
-        Next step: add Google login + admin-only access.
-      </p>
-
-      {/* Developer section */}
-      <div className="border border-brand-border rounded-xl p-5">
-        <h3 className="text-xs font-semibold text-brand-gray uppercase tracking-wide mb-4">
-          Developer
-        </h3>
-
-        <button
-          onClick={testExample}
-          className="px-4 py-2 rounded-lg border border-brand-border bg-white text-sm font-medium text-brand-dark hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
-        >
-          Test API Status
-        </button>
-
-        {result && (
-          <pre className="mt-4 p-4 rounded-xl border border-brand-border bg-gray-50 text-xs text-brand-dark overflow-x-auto leading-relaxed">
-            {result}
-          </pre>
-        )}
-      </div>
     </main>
   );
 }

@@ -13,11 +13,18 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
   yet wired into pages).
 - `.github/workflows/pages.yaml` — GitHub Pages deploy (disabled until P5).
 
-**Deferred on purpose (destructive / phase-gated) — do AFTER Wix backend verified:**
-- P5: flip `next.config.ts` to `output:"export"` + `images.unoptimized`, delete `src/app/api/**`,
-  remove `google-auth-library`, drop the IAP `headers()` read in `layout.tsx`, replace `next/image`,
-  wire each page to `wixApi`, mount the Google Sign-In gate.
-- P6: delete `infra/**` and the GCP GitHub Actions workflows; tear down GCP resources.
+**Done in-repo (P5 frontend flip + P6 repo cleanup):**
+- P5: `next.config.ts` → `output:"export"` + `images.unoptimized`; deleted `src/app/api/**`; removed
+  `google-auth-library`; dropped the IAP `headers()` read; replaced `next/image`; every page wired to
+  `wixApi`; Google Sign-In gate mounted in `clientShell.tsx`. Static build verified (`out/` produced).
+  `pages.yaml` auto-deploy re-enabled on push to `main`.
+- P6 (repo side): deleted `infra/**`, `.gcloudignore`, and the GCP GitHub Actions workflows.
+
+**Still to do (console/CLI — only you can):**
+- Set repo Actions vars `WIX_FUNCTIONS_BASE` + `GOOGLE_OAUTH_CLIENT_ID` so the deployed site works.
+- Tear down live GCP resources (Cloud Run, Artifact Registry, Cloud Build, WIF, GCS, Firestore,
+  Secret Manager) per the plan's teardown order. The Express services under `apps/*` remain in the
+  repo for now (pruned later), but nothing deploys them anymore.
 
 ## P0 — Stand up Wix (console)
 1. Content Manager → create collections **Members, Counters, MemberIds, VolunteerRequests**

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { wixApi } from "@/lib/wixApi";
 
 type Member = {
   docId: string;
@@ -88,9 +89,8 @@ export default function OnboardingQueuePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/onboarding/queue");
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error ?? "Failed to load queue");
+      const data = await wixApi.listQueue();
+      if (!data.ok) throw new Error((data as any).error ?? "Failed to load queue");
       setMembers(data.members ?? []);
     } catch (e: any) {
       setError(e?.message ?? String(e));
@@ -114,13 +114,8 @@ export default function OnboardingQueuePage() {
     setRowSuccess((prev) => ({ ...prev, [member.docId]: "" }));
 
     try {
-      const res = await fetch(`/api/onboarding/approve/${member.docId}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ firstNamePolish: firstName }),
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error ?? "Approval failed");
+      const data = await wixApi.approve(member.docId, firstName);
+      if (!data.ok) throw new Error((data as any).error ?? "Approval failed");
 
       setRowSuccess((prev) => ({
         ...prev,
@@ -139,7 +134,7 @@ export default function OnboardingQueuePage() {
 
   async function handleDelete(member: Member) {
     const confirmed = window.confirm(
-      `Delete ${member.fullName} (${member.memberId}) from the queue?\n\nThis removes the Firestore record. The certificate PDF in storage and the Wix contact are preserved.`
+      `Delete ${member.fullName} (${member.memberId}) from the queue?\n\nThis removes the CMS record. The certificate PDF in Wix Media and the Wix contact are preserved.`
     );
     if (!confirmed) return;
 
@@ -147,9 +142,8 @@ export default function OnboardingQueuePage() {
     setRowErrors((prev) => ({ ...prev, [member.docId]: "" }));
 
     try {
-      const res = await fetch(`/api/onboarding/queue/${member.docId}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error ?? "Delete failed");
+      const data = await wixApi.deleteFromQueue(member.docId);
+      if (!data.ok) throw new Error((data as any).error ?? "Delete failed");
 
       setMembers((prev) => prev.filter((m) => m.docId !== member.docId));
     } catch (e: any) {

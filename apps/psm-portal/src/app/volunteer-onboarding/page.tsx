@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { wixApi } from "@/lib/wixApi";
 
 type VolunteerOnboardingRequest = {
   id: string;
@@ -95,20 +96,12 @@ export default function VolunteerOnboardingPage() {
         suggestedPrimaryEmail
       };
 
-      const resp = await fetch("/api/onboarding/volunteer", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      const result = await wixApi.provisionVolunteer(payload);
+      if (!result?.ok) throw new Error((result as any)?.error ?? "Backend rejected request");
 
-      const text = await resp.text();
-      let json: any = null;
-      try {
-        json = JSON.parse(text);
-      } catch {}
-
-      const result = json;
-      if (!result?.ok) throw new Error(result?.error ?? "Backend rejected request");
+      // Kick off the async tail (propagation wait, Gmail signature, onboarding emails, Slack).
+      // Fire-and-forget: the account already exists; these steps are non-fatal and self-report.
+      wixApi.finishVolunteer(result.requestId).catch(() => {});
 
       const record: VolunteerOnboardingRequest = {
         id: result.requestId,

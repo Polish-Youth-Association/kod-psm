@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Image from "next/image";
 
 const links = [
   { href: "/", label: "Home" },
@@ -24,13 +23,13 @@ export function TopNav({
     <header className="sticky top-0 z-10 bg-white border-b border-brand-border">
       <nav className="h-16 max-w-7xl mx-auto px-6 flex items-center gap-4">
         <div className="flex items-center shrink-0">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="https://static.wixstatic.com/media/d7f1c6_4692e1506cb8406798ac7defaf85bed1~mv2.png"
             alt="Polish Youth Association"
             width={140}
             height={40}
             className="h-10 w-auto"
-            priority
           />
         </div>
 
