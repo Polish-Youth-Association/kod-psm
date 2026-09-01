@@ -74,7 +74,7 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
         <div className="h-16 flex items-center justify-between px-5 border-b border-brand-border shrink-0">
           <div>
             <p className="font-semibold text-brand-dark text-sm">PSM Assistant</p>
-            <p className="text-xs text-brand-gray">Powered by Gemini</p>
+            <p className="text-xs text-brand-gray">Powered by Llama 3.3 (Groq)</p>
           </div>
           <div className="flex items-center gap-2">
             {messages.length > 0 && (

@@ -71,7 +71,7 @@ export default function ChatPage() {
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-brand-dark">PSM Assistant</h1>
-          <p className="text-brand-gray text-sm">Powered by Gemini</p>
+          <p className="text-brand-gray text-sm">Powered by Llama 3.3 (Groq)</p>
         </div>
         {messages.length > 0 && (
           <button

@@ -9,7 +9,7 @@
 
 import { assertPsmStaff, bearerFromRequest } from 'backend/auth';
 import { preflight, json, fail } from 'backend/cors';
-import { chat } from 'backend/gemini';
+import { chat } from 'backend/llm';
 import { listPending, deleteMember } from 'backend/queue';
 import { approveMember } from 'backend/approve';
 import { sendWelcomeEmailManual } from 'backend/memberEmail';

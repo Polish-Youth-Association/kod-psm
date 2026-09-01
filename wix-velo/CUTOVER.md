@@ -6,7 +6,7 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
 ## Status
 
 **Done in-repo (this branch):**
-- `wix-velo/backend/**` — full Velo backend (auth gate, gemini, counter, cert, queue, approve,
+- `wix-velo/backend/**` — full Velo backend (auth gate, llm/chat via Groq, counter, cert, queue, approve,
   member email, intake, signup, Wix contact, workspace auth, google workspace, volunteer, events).
 - `scripts/export-firestore-to-wix.ts` — read-only Firestore → CSV export.
 - `apps/psm-portal/src/lib/{wixApi,googleAuth}.ts` — frontend client + Google Sign-In (additive; not
@@ -41,7 +41,7 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
    Set `FRONTEND_ORIGIN` in `cors.js` to your Pages domain.
 8. Verify: `GET /_functions/queue` with a non-`@polishyouth.org` token → 403; with a valid token → 200.
 
-## P1 — Read + Gemini
+## P1 — Read + chat (Groq)
 - `pnpm ts-node scripts/export-firestore-to-wix.ts` → import CSVs into the collections (dry run).
 - Test `chat` and `queue` via `_functions`; compare queue output to the live Cloud Run response.
 
@@ -67,4 +67,4 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
 ## P6 — Teardown (see plan §GCP teardown for exact order)
 - Delete GCP deploy workflows + `infra/**`, then Cloud Run, IAP, Artifact Registry, Cloud Build,
   WIF, GCS bucket, Firestore (keep a final export), Secret Manager. Keep Workspace, the SA key
-  (now in Wix), the Gemini key, and the domain.
+  (now in Wix), and the domain. (No Gemini key needed — chat now uses Groq's free API.)
