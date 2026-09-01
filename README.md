@@ -85,32 +85,22 @@ The repo uses **pnpm workspaces** for:
 
 ## 🚀 CI/CD Workflows
 
-GitHub Actions powers the entire CI/CD process.
+One pipeline: **merge to `main` → auto-deploy.**
 
-**ci.yml** | Runs build/install on all PRs into `dev` and `main`. Required to merge. 
-**deploy-dev.yml** | Deploys only changed services to Cloud Run (dev environment). 
-**deploy-prod.yml** | Deploys to production when changes land in `main`. 
+**pages.yaml** | Builds the `psm-portal` static export and publishes it to **GitHub Pages** on every push to `main`.
+**security.yaml** | Report-only security scans (Gitleaks, pnpm audit, Semgrep, Trivy) on push to `main`.
 
-### “Deploy Only Changed Apps”
-The deploy workflow:
-1. Diffs the commit or PR
-2. Detects which application folders changed
-3. Deploys *only those* apps
-
-This keeps deployments fast and efficient.
+The backend runs on **Wix Velo** + **Wix CMS** (see `wix-velo/CUTOVER.md`); there is no Cloud Run /
+Artifact Registry / Cloud Build / Terraform pipeline anymore.
 
 ---
 
 ## 🔀 Branch Strategy
 
-- **main** → Production  
-- **dev** → Integration / staging environment  
-- Feature branches → daily development
+- **main** → the only long-lived branch; merging to it deploys to GitHub Pages.
+- Feature branches → daily development, PR'd into `main`.
 
-### Branch Protection Rules
-- `dev` and `main` require CI to pass before merging.
-- Direct pushes to these branches are blocked.
-- Review rules + status checks enforce quality.
+The old `dev`/`prod` split (staging vs. Cloud Run production) has been retired.
 
 ---
 

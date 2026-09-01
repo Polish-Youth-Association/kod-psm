@@ -131,12 +131,14 @@ Never use the root `pnpm run build` in a service Dockerfile — it builds all 9 
 
 ### Deployment
 
-- Deployments are triggered on push to `prod` (production) and `dev` (staging) branches via GitHub Actions.
-- Only apps with changed files are rebuilt and redeployed (diff-based detection).
-- Images go to Google Artifact Registry; services run on Google Cloud Run.
-- GitHub → GCP authentication uses Workload Identity Federation (no long-lived keys).
-- App metadata (region, artifact repo, secrets) is centralized in `infra/apps.yaml`.
-- IAP controls access at the Cloud Run level.
+Single-branch, single-pipeline (migration off GCP in progress — see `wix-velo/CUTOVER.md`):
+
+- **Merge to `main` → auto-deploy.** That's the whole model. `.github/workflows/pages.yaml`
+  builds the `psm-portal` static export and publishes it to **GitHub Pages**.
+- Backend runs on **Wix Velo** (functions + Secrets Manager); data in **Wix CMS**. No Cloud Run,
+  Artifact Registry, Cloud Build, WIF, or Terraform.
+- `security.yaml` runs report-only security scans on push to `main`.
+- Legacy GCP deploy/infra workflows and the `dev`/`prod` branches have been retired.
 
 ### Environment / Secrets
 
