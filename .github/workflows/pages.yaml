@@ -3,14 +3,17 @@
 # and add a CNAME for the custom domain.
 #
 # Prerequisite (plan phase P5): next.config.ts uses `output: "export"` and images `unoptimized: true`,
-# and the /api/* routes have been removed. Until that lands, the build won't produce `out/` and this
-# workflow will fail — expected until the Wix backend is verified and the frontend is flipped.
+# and the /api/* routes have been removed. Until that lands, the build won't produce `out/`.
+#
+# GATED UNTIL P5: currently `workflow_dispatch` only, so it won't run (and fail) on merges to main
+# while the portal is still a server app. When the P5 frontend flip lands, re-enable the auto-deploy
+# by uncommenting the `push` trigger below.
 name: Deploy Portal to GitHub Pages
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]   # <-- uncomment at P5 to enable "merge to main -> auto-deploy"
 
 permissions:
   contents: read
