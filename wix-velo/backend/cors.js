@@ -1,13 +1,12 @@
 // backend/cors.js
 // CORS + JSON helpers for http-functions called cross-origin from the GitHub Pages frontend.
 //
-// Set FRONTEND_ORIGIN to your published frontend origin (e.g. https://psm.polishyouth.org).
+// Set FRONTEND_ORIGIN to your published frontend origin.
 // Using an explicit origin (not "*") is required because the frontend sends an Authorization header.
 
 import { ok, badRequest, serverError, forbidden, created } from 'wix-http-functions';
 
-// TODO: set to your GitHub Pages custom-domain origin once known.
-export const FRONTEND_ORIGIN = 'https://psm.polishyouth.org';
+export const FRONTEND_ORIGIN = 'https://portal.polishyouth.org';
 
 function corsHeaders() {
   return {

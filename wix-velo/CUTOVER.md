@@ -38,7 +38,7 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
 6. Create a Google OAuth 2.0 **Web client id**; put it in both `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
    (frontend) and the Velo secret `GOOGLE_OAUTH_CLIENT_ID`.
 7. Sync `wix-velo/backend/**` into the site (`wix dev`/`wix push` or Studio↔GitHub).
-   Set `FRONTEND_ORIGIN` in `cors.js` to your Pages domain.
+   `FRONTEND_ORIGIN` in `cors.js` is set to `https://portal.polishyouth.org` (the Pages domain).
 8. Verify: `GET /_functions/queue` with a non-`@polishyouth.org` token → 403; with a valid token → 200.
 
 ## P1 — Read + chat (Groq)
