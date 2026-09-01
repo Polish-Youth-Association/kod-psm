@@ -1,0 +1,55 @@
+# Deploy psm-portal (static export) to GitHub Pages.
+# Enable in repo Settings -> Pages -> Source: "GitHub Actions". Add a CNAME for the custom domain.
+#
+# Prerequisite (plan phase P5): next.config.ts uses `output: "export"` and images `unoptimized: true`,
+# and the /api/* routes have been removed. Until then this workflow will not produce a usable static
+# site — keep it disabled (or on a branch) until the Wix backend is verified.
+name: Deploy Portal to GitHub Pages
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [prod]
+    paths: ["apps/psm-portal/**"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build static export
+        working-directory: apps/psm-portal
+        env:
+          NEXT_PUBLIC_WIX_FUNCTIONS_BASE: ${{ vars.WIX_FUNCTIONS_BASE }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID }}
+        run: pnpm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/psm-portal/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
