@@ -16,7 +16,7 @@ wix-velo/
     auth.js              # assertPsmStaff(idToken) — Google Sign-In gate (used by every entrypoint)
     cors.js              # CORS helper for http-functions
     http-functions.js    # browser-facing HTTP surface (called by the GitHub Pages frontend)
-    gemini.js            # chat(history, message)
+    llm.js               # chat(history, message) — Groq (open-weights model)
     counter.js           # assignMemberId(prefix), resolvePrefix(input)
     cert.js              # generateAndStore(memberId, first, last) -> Wix Media URL
     queue.js             # listPending(), deleteMember(docId)
@@ -44,7 +44,8 @@ wix-velo/
 
 ## Secrets to add (Wix Secrets Manager)
 
-`GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID` (the Google Sign-In web client id, for `aud` check),
+`GROQ_API_KEY` (free key from console.groq.com — chat assistant),
+`GOOGLE_OAUTH_CLIENT_ID` (the Google Sign-In web client id, for `aud` check),
 `GOOGLE_SA_KEY_JSON` (full service-account JSON with domain-wide delegation),
 `WORKSPACE_IMPERSONATE_ADMIN`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `WORKSPACE_DOMAIN`, `DEFAULT_ORG_UNIT`,
 `WORKSPACE_TEMP_PASSWORD_PREFIX`, `ONBOARDING_FROM_EMAIL`, `SLACK_INVITE_LINK`,

@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useUser } from "@/components/userContext";
+import { wixApi } from "@/lib/wixApi";
 
 const CONTEXT_WINDOW = 16_384;
 
@@ -42,18 +43,12 @@ export default function ChatPage() {
     try {
       const history = messages.map((m) => ({ role: m.role, text: m.text }));
 
-      const resp = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ history, message: text })
-      });
-
-      const json = await resp.json();
+      const json = await wixApi.chat(history, text);
       if (!json.ok) throw new Error(json.error ?? "Unknown error");
 
       setMessages((prev) => [
         ...prev,
-        { id: `msg_${Date.now()}`, role: "model" as const, text: json.reply }
+        { id: `msg_${Date.now()}`, role: "model" as const, text: json.reply ?? "" }
       ]);
     } catch (err: any) {
       setError(err?.message ?? String(err));
@@ -76,7 +71,7 @@ export default function ChatPage() {
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-brand-dark">PSM Assistant</h1>
-          <p className="text-brand-gray text-sm">Powered by Gemini</p>
+          <p className="text-brand-gray text-sm">Powered by Llama 3.3 (Groq)</p>
         </div>
         {messages.length > 0 && (
           <button

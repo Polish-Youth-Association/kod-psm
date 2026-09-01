@@ -58,6 +58,22 @@ export function getCurrentEmail(): string | null {
   return currentEmail;
 }
 
+/** Render the official Google sign-in button into the given element. */
+export function renderSignInButton(el: HTMLElement): void {
+  if (typeof window === "undefined") return;
+  const draw = () => {
+    window.google.accounts.id.renderButton(el, {
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      text: "signin_with",
+      shape: "pill",
+    });
+  };
+  if (window.google?.accounts?.id) draw();
+  else initGoogleAuth(); // loads the script; button re-render happens on next call
+}
+
 /** Resolve the current ID token, prompting for sign-in if we don't have one yet. */
 export function getIdToken(): Promise<string> {
   if (currentToken) return Promise.resolve(currentToken);
