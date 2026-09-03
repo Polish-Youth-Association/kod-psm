@@ -82,6 +82,7 @@ export default function OnboardingQueuePage() {
   const [approving, setApproving] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
   const [polishNames, setPolishNames] = useState<Record<string, string>>({});
+  const [memberIdInputs, setMemberIdInputs] = useState<Record<string, string>>({});
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [rowSuccess, setRowSuccess] = useState<Record<string, string>>({});
 
@@ -109,12 +110,19 @@ export default function OnboardingQueuePage() {
       setRowErrors((prev) => ({ ...prev, [member.docId]: "Polish first name is required." }));
       return;
     }
+    // Member ID is assigned manually by the membership team. Use the typed value,
+    // falling back to any ID already on the record.
+    const memberId = (memberIdInputs[member.docId] ?? member.memberId ?? "").trim();
+    if (!memberId) {
+      setRowErrors((prev) => ({ ...prev, [member.docId]: "Member ID is required." }));
+      return;
+    }
     setApproving((prev) => ({ ...prev, [member.docId]: true }));
     setRowErrors((prev) => ({ ...prev, [member.docId]: "" }));
     setRowSuccess((prev) => ({ ...prev, [member.docId]: "" }));
 
     try {
-      const data = await wixApi.approve(member.docId, firstName);
+      const data = await wixApi.approve(member.docId, firstName, memberId);
       if (!data.ok) throw new Error((data as any).error ?? "Approval failed");
 
       setRowSuccess((prev) => ({
@@ -253,6 +261,20 @@ export default function OnboardingQueuePage() {
                   <p className="text-sm text-green-700 font-medium">{rowSuccess[member.docId]}</p>
                 ) : (
                   <div className="flex items-start gap-3 flex-wrap">
+                    <div className="min-w-[140px]">
+                      <label className="block text-xs text-brand-gray mb-1">
+                        Member ID <span className="text-brand-red">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. DNY42"
+                        value={memberIdInputs[member.docId] ?? member.memberId ?? ""}
+                        onChange={(e) =>
+                          setMemberIdInputs((prev) => ({ ...prev, [member.docId]: e.target.value }))
+                        }
+                        className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red"
+                      />
+                    </div>
                     <div className="flex-1 min-w-[220px]">
                       <label className="block text-xs text-brand-gray mb-1">
                         First name in Polish <span className="text-brand-red">*</span>

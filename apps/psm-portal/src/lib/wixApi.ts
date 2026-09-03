@@ -36,8 +36,12 @@ export const wixApi = {
   deleteFromQueue: (docId: string) =>
     call<{ ok: boolean }>("DELETE", `/queue?docId=${encodeURIComponent(docId)}`),
 
-  approve: (docId: string, firstNamePolish: string) =>
-    call<{ ok: boolean; memberId?: string }>("POST", "/approve", { docId, firstNamePolish }),
+  approve: (docId: string, firstNamePolish: string, memberId: string) =>
+    call<{ ok: boolean; memberId?: string; emailSent?: boolean }>("POST", "/approve", {
+      docId,
+      firstNamePolish,
+      memberId,
+    }),
 
   sendMemberEmail: (payload: Record<string, unknown>) =>
     call<{ ok: boolean; message?: string }>("POST", "/member", payload),
