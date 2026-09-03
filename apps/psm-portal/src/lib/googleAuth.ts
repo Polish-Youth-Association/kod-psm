@@ -12,6 +12,11 @@ const HOSTED_DOMAIN = "polishyouth.org";
 let currentToken: string | null = null;
 let currentEmail: string | null = null;
 let resolveToken: ((t: string) => void) | null = null;
+let onSignedInCb: ((email: string) => void) | null = null;
+
+// Memoized so the GIS script loads once and initialize() runs once.
+let gisReady: Promise<void> | null = null;
+let initialized = false;
 
 declare global {
   interface Window {
@@ -28,40 +33,53 @@ function decodeEmail(idToken: string): string | null {
   }
 }
 
-/** Load the GIS script once and initialize with our client id. */
-export function initGoogleAuth(onSignedIn?: (email: string) => void): void {
-  if (typeof window === "undefined") return;
-  const boot = () => {
-    window.google.accounts.id.initialize({
-      client_id: CLIENT_ID,
-      hosted_domain: HOSTED_DOMAIN,
-      callback: (resp: { credential: string }) => {
-        currentToken = resp.credential;
-        currentEmail = decodeEmail(resp.credential);
-        if (resolveToken) { resolveToken(currentToken); resolveToken = null; }
-        if (onSignedIn && currentEmail) onSignedIn(currentEmail);
-      },
-    });
-    window.google.accounts.id.prompt();
-  };
+function ensureInitialized(): void {
+  if (initialized || typeof window === "undefined" || !window.google?.accounts?.id) return;
+  window.google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    hosted_domain: HOSTED_DOMAIN,
+    callback: (resp: { credential: string }) => {
+      currentToken = resp.credential;
+      currentEmail = decodeEmail(resp.credential);
+      if (resolveToken) {
+        resolveToken(currentToken);
+        resolveToken = null;
+      }
+      if (onSignedInCb && currentEmail) onSignedInCb(currentEmail);
+    },
+  });
+  initialized = true;
+}
 
-  if (window.google?.accounts?.id) return boot();
-  const s = document.createElement("script");
-  s.src = "https://accounts.google.com/gsi/client";
-  s.async = true;
-  s.defer = true;
-  s.onload = boot;
-  document.head.appendChild(s);
+// Load the GIS script exactly once; resolve when google.accounts.id is available + initialized.
+function loadGis(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (gisReady) return gisReady;
+  gisReady = new Promise<void>((resolve) => {
+    if (window.google?.accounts?.id) return resolve();
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true;
+    s.defer = true;
+    s.onload = () => resolve();
+    document.head.appendChild(s);
+  }).then(() => ensureInitialized());
+  return gisReady;
+}
+
+/** Kick off GIS loading + One Tap prompt. `onSignedIn` fires with the email once signed in. */
+export function initGoogleAuth(onSignedIn?: (email: string) => void): void {
+  if (onSignedIn) onSignedInCb = onSignedIn;
+  loadGis().then(() => window.google.accounts.id.prompt());
 }
 
 export function getCurrentEmail(): string | null {
   return currentEmail;
 }
 
-/** Render the official Google sign-in button into the given element. */
+/** Render the official Google sign-in button — waits for GIS to load first (no refresh needed). */
 export function renderSignInButton(el: HTMLElement): void {
-  if (typeof window === "undefined") return;
-  const draw = () => {
+  loadGis().then(() => {
     window.google.accounts.id.renderButton(el, {
       type: "standard",
       theme: "outline",
@@ -69,9 +87,7 @@ export function renderSignInButton(el: HTMLElement): void {
       text: "signin_with",
       shape: "pill",
     });
-  };
-  if (window.google?.accounts?.id) draw();
-  else initGoogleAuth(); // loads the script; button re-render happens on next call
+  });
 }
 
 /** Resolve the current ID token, prompting for sign-in if we don't have one yet. */
@@ -79,10 +95,6 @@ export function getIdToken(): Promise<string> {
   if (currentToken) return Promise.resolve(currentToken);
   return new Promise<string>((resolve) => {
     resolveToken = resolve;
-    if (typeof window !== "undefined" && window.google?.accounts?.id) {
-      window.google.accounts.id.prompt();
-    } else {
-      initGoogleAuth();
-    }
+    loadGis().then(() => window.google.accounts.id.prompt());
   });
 }
