@@ -56,6 +56,8 @@ export default function VolunteerOnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [requests, setRequests] = useState<VolunteerOnboardingRequest[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  // Shown once after a successful provision — fallback in case the emailed copy fails.
+  const [lastProvision, setLastProvision] = useState<{ email: string; tempPassword: string } | null>(null);
 
   const suggestedPrimaryEmail = useMemo(() => {
     const local = toEmailLocalPart(form.firstName, form.lastName);
@@ -98,6 +100,13 @@ export default function VolunteerOnboardingPage() {
 
       const result = await wixApi.provisionVolunteer(payload);
       if (!result?.ok) throw new Error((result as any)?.error ?? "Backend rejected request");
+
+      // Surface the temp password once to the admin — the emailed copy is the primary
+      // channel, but if that fails this is the only other place it exists.
+      setLastProvision({
+        email: result.user?.primaryEmail ?? payload.suggestedPrimaryEmail,
+        tempPassword: result.tempPassword,
+      });
 
       // Kick off the async tail. Mailbox-independent steps (personal temp-password email,
       // Slack) run on the first call; mailbox-dependent steps (Gmail signature, PSM-inbox
@@ -270,6 +279,35 @@ export default function VolunteerOnboardingPage() {
           )}
         </form>
       </section>
+
+      {/* One-time temp password reveal (fallback if the emailed copy fails) */}
+      {lastProvision && (
+        <section className="mb-8 p-5 bg-green-50 border border-green-200 rounded-2xl">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-green-800 mb-1">
+                Account created: <span className="font-mono">{lastProvision.email}</span>
+              </p>
+              <p className="text-sm text-green-800">
+                Temporary password:{" "}
+                <code className="font-mono bg-white border border-green-200 rounded px-2 py-0.5">
+                  {lastProvision.tempPassword}
+                </code>
+              </p>
+              <p className="text-xs text-green-700 mt-2">
+                Shown only once — it is also emailed to the volunteer&apos;s personal address. If that
+                email fails, copy it now. The volunteer must change it at first login.
+              </p>
+            </div>
+            <button
+              onClick={() => setLastProvision(null)}
+              className="px-3 py-1.5 rounded-lg border border-green-300 text-xs text-green-800 hover:bg-green-100 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Recent requests */}
       <section className="bg-white border border-brand-border rounded-2xl overflow-hidden">
