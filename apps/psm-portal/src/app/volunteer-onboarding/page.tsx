@@ -99,9 +99,22 @@ export default function VolunteerOnboardingPage() {
       const result = await wixApi.provisionVolunteer(payload);
       if (!result?.ok) throw new Error((result as any)?.error ?? "Backend rejected request");
 
-      // Kick off the async tail (propagation wait, Gmail signature, onboarding emails, Slack).
-      // Fire-and-forget: the account already exists; these steps are non-fatal and self-report.
-      wixApi.finishVolunteer(result.requestId).catch(() => {});
+      // Kick off the async tail. Mailbox-independent steps (personal temp-password email,
+      // Slack) run on the first call; mailbox-dependent steps (Gmail signature, PSM-inbox
+      // copy) need Google to finish provisioning the mailbox, so while the backend reports
+      // `pending`, re-call on a backoff. Fire-and-forget; steps are non-fatal + re-entrant.
+      const runFinish = (attempt: number) => {
+        wixApi
+          .finishVolunteer(result.requestId)
+          .then((r) => {
+            if (r?.pending && attempt < 4) {
+              // ~30s, 90s, 180s after the first call — covers typical mailbox init lag.
+              setTimeout(() => runFinish(attempt + 1), attempt === 0 ? 30_000 : 90_000);
+            }
+          })
+          .catch(() => {});
+      };
+      runFinish(0);
 
       const record: VolunteerOnboardingRequest = {
         id: result.requestId,
