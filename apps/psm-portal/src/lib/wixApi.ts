@@ -50,5 +50,5 @@ export const wixApi = {
     call<{ ok: boolean; requestId: string; user: any; tempPassword: string }>("POST", "/volunteer", payload),
 
   finishVolunteer: (requestId: string) =>
-    call<{ ok: boolean }>("POST", "/volunteerFinish", { requestId }),
+    call<{ ok: boolean; pending?: boolean }>("POST", "/volunteerFinish", { requestId }),
 };
