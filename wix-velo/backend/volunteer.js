@@ -6,8 +6,8 @@
 // split it in two:
 //   provisionVolunteer()  -> fast, must-succeed: validate + Directory users.insert; persist a
 //                            VolunteerRequests row; return { requestId, primaryEmail, tempPassword }.
-//   finishProvisioning()  -> best-effort tail: wait for propagation, set signature, send 2 emails,
-//                            trigger Slack; record per-step status. Called by the frontend after a
+//   finishProvisioning()  -> best-effort tail: wait for propagation, add to groups, set signature,
+//                            send 2 emails, trigger Slack; record per-step status. Called by the frontend after a
 //                            short delay, or by a Wix scheduled job.
 
 import crypto from 'crypto';
@@ -15,7 +15,7 @@ import wixData from 'wix-data';
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 import { COLLECTIONS } from 'backend/config';
-import { insertUser, getUser, sendGmail, setGmailSignature } from 'backend/googleWorkspace';
+import { insertUser, getUser, sendGmail, setGmailSignature, addGroupMember } from 'backend/googleWorkspace';
 import {
   ONBOARDING_TEMPLATE_HTML,
   ONBOARDING_TEMPLATE_PSM_HTML,
@@ -25,6 +25,8 @@ import {
 
 const AUTH = { suppressAuth: true };
 const CC_EMAIL = 'onboarding@polishyouth.org';
+// Google Groups every new volunteer is added to (as MEMBER).
+const VOLUNTEER_GROUPS = ['chatgpt@polishyouth.org'];
 
 function isEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s).trim()); }
 
@@ -96,6 +98,7 @@ export async function provisionVolunteer(body) {
       title: (body.title || '').trim(),
       personalEmail: String(body.personalEmail).trim(),
       tempPassword, // stored so finishProvisioning can email it; delete the row after completion
+      groupStatus: 'Pending',
       signatureStatus: 'Pending',
       emailStatus: 'Pending',
       docusignStatus: 'Pending',
@@ -124,6 +127,12 @@ export async function finishProvisioning(requestId) {
     try { await getUser(createdEmail); break; }
     catch (err) { if (err.code !== 404) throw err; await new Promise((r) => setTimeout(r, 2000)); }
   }
+
+  // Group memberships (best-effort)
+  try {
+    for (const group of VOLUNTEER_GROUPS) await addGroupMember(group, createdEmail);
+    req.groupStatus = 'Added';
+  } catch (e) { req.groupStatus = 'Failed'; }
 
   // Signature (best-effort)
   try {
@@ -175,6 +184,7 @@ export async function finishProvisioning(requestId) {
   return {
     ok: true,
     requestId,
+    groups: { status: req.groupStatus },
     signature: { status: req.signatureStatus },
     email: { status: req.emailStatus },
     docusign: { status: req.docusignStatus },

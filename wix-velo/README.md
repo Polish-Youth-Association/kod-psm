@@ -53,6 +53,14 @@ wix-velo/
 `SLACK_DOCUSIGN_WORKFLOW_WEBHOOK_URL`, `SIGNATURE_*` (as needed),
 and email: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`.
 
+## Domain-wide delegation scopes (Google Admin console)
+
+The service account's client id must be authorized for:
+`https://www.googleapis.com/auth/admin.directory.user`,
+`https://www.googleapis.com/auth/admin.directory.group.member` (volunteer group membership),
+`https://www.googleapis.com/auth/gmail.send`,
+`https://www.googleapis.com/auth/gmail.settings.basic`.
+
 ## npm packages to install in Velo (Package Manager)
 
 `jsonwebtoken` (RS256 signing), `pdf-lib`, `@pdf-lib/fontkit`, `zipcodes`, and `nodemailer`
