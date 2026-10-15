@@ -7,6 +7,7 @@ import { fetch } from 'wix-fetch';
 import { getDelegatedAccessToken } from 'backend/workspaceAuth';
 
 const DIRECTORY_SCOPE = 'https://www.googleapis.com/auth/admin.directory.user';
+const GROUP_MEMBER_SCOPE = 'https://www.googleapis.com/auth/admin.directory.group.member';
 const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send';
 const GMAIL_SETTINGS_SCOPE = 'https://www.googleapis.com/auth/gmail.settings.basic';
 
@@ -39,6 +40,22 @@ export async function getUser(userKey) {
     `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(userKey)}?projection=full`,
     token
   );
+}
+
+/** Add a user to a Google Group as MEMBER. Already being a member (409) counts as success. */
+export async function addGroupMember(groupKey, memberEmail) {
+  const token = await getDelegatedAccessToken([GROUP_MEMBER_SCOPE]);
+  try {
+    return await gapi(
+      'post',
+      `https://admin.googleapis.com/admin/directory/v1/groups/${encodeURIComponent(groupKey)}/members`,
+      token,
+      { email: memberEmail, role: 'MEMBER' }
+    );
+  } catch (err) {
+    if (err.code === 409) return { alreadyMember: true };
+    throw err;
+  }
 }
 
 /** Send an HTML email as `fromMailbox` (impersonated). */
