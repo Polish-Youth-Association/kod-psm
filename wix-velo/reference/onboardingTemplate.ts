@@ -32,7 +32,7 @@ export const ONBOARDING_TEMPLATE_HTML = `<div style="font-family: Arial, Helveti
 
   <p style="margin-bottom: 16px;">Additionally, please send me a short bio in English or Polish (or both) written in third person, and a headshot that we can place on our website. Optimally, both the headshot and bio should resemble the ones already on our team page (<a href="https://www.polishyouth.org/team" style="color: #1A73E8;">www.polishyouth.org/team</a>). Please also provide me with a copy of your resume.</p>
 
-  <p style="margin-bottom: 16px;">For next steps, set up an onboarding meeting with the President of the Polish Youth Association to discuss your role and responsibilities as well as how the organization works as a whole. You can do so by contacting him directly through Slack or iMessage to schedule a time that works for you.</p>
+  <p style="margin-bottom: 16px;">For next steps, set up an onboarding meeting with Maya Milewski and your team lead to discuss your role and responsibilities as well as how the organization works as a whole. You can do so by contacting them directly through Slack or iMessage to schedule a time that works for you.</p>
 
   <p style="margin-bottom: 16px;">Please let me know if you have any questions or concerns. Best of luck!</p>
 </div>
