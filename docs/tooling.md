@@ -2,8 +2,8 @@
 
 ## TypeScript
 - Base config in `tsconfig.base.json`.
-- Apps/libs typically have their own `tsconfig.json`.
-- Output goes to `dist/`.
+- The portal has its own `tsconfig.json`.
+
 
 ## Linting
 Root script:
@@ -24,4 +24,4 @@ Root script:
 ```
 pnpm test
 ```
-If tests are added inside apps/libs, ensure Jest config is wired up.
+If tests are added, ensure Jest config is wired up.

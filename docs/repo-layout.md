@@ -1,31 +1,15 @@
 # Repo layout
 
-This repo is a pnpm workspace monorepo with apps and shared libraries.
+This repo is a pnpm workspace with a single app plus the Wix Velo backend source.
 
 ## Top-level folders
-- `apps/` deployable services (Cloud Run)
-- `libs/` shared code used by apps
-- `infra/` deployment configuration and infra helpers
-- `scripts/` repo automation (scaffolding, helpers)
+- `apps/psm-portal/` staff portal (Next.js static export)
+- `wix-velo/` Wix Velo backend source; `wix-velo/reference/` holds template HTML kept from the retired services
 - `docs/` documentation
 
 ## Key files
 - `pnpm-workspace.yaml` workspace boundaries
 - `package.json` root scripts and dev tooling
 - `tsconfig.base.json` shared TypeScript defaults
-- `tsconfig.json` repo-wide TS config (mostly for tooling)
-- `infra/apps.yaml` app registry used by CI/CD
 - `.github/workflows/*.yaml` CI/CD pipelines
-
-## Apps
-Each app should include:
-- `src/` source
-- `package.json` with build/start scripts
-- `tsconfig.json`
-- optional `iam.yaml`
-
-## Libraries
-Each library should include:
-- `src/` source
-- `package.json` with build script
-- `tsconfig.json` with `declaration: true`
+- `wix-velo/CUTOVER.md` GCP → GitHub Pages + Wix cutover runbook

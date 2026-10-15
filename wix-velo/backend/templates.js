@@ -1,5 +1,5 @@
 // backend/templates.js
-// Paste the volunteer onboarding email + signature HTML here (from apps/volunteer-onboarding/src/
+// Paste the volunteer onboarding email + signature HTML here (from wix-velo/reference/
 // onboardingTemplate.ts, onboardingTemplatePsmInbox.ts, gmailSignature.ts buildPolishYouthSignatureHtml).
 // Kept separate so the large HTML strings don't clutter the logic modules.
 

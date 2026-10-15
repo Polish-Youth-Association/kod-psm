@@ -130,89 +130,9 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
-  # 4. CONTAINER IMAGE SCANNING — Trivy
-  #    Scans every app in apps/ on every push to dev.
-  #    Builds each Dockerfile locally, runs Trivy, and saves a
-  #    per-app JSON report as a downloadable Actions artifact.
-  # ─────────────────────────────────────────────────────────────────
-  container-scan:
-    name: 🐳 Container Scan (all apps)
-    runs-on: ubuntu-latest
-    continue-on-error: true  # Report only — non-blocking
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Trivy
-        uses: aquasecurity/trivy-action@v0.35.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: json
-          output: trivy-dummy.json
-          exit-code: '0'
-        continue-on-error: true
-
-      - name: Scan all app containers with Trivy
-        run: |
-          for APP_DIR in apps/*/; do
-            APP_NAME=$(basename "$APP_DIR")
-
-            if [ ! -f "$APP_DIR/Dockerfile" ]; then
-              echo "⚠️  Skipping $APP_NAME — no Dockerfile found"
-              continue
-            fi
-
-            echo "🐳 Building image for: $APP_NAME"
-            IMAGE="kod-psm/$APP_NAME:security-scan"
-
-            docker build -t "$IMAGE" "$APP_DIR" || {
-              echo "❌ Docker build failed for $APP_NAME"
-              continue
-            }
-
-            echo "🔍 Scanning $APP_NAME with Trivy..."
-            trivy image \
-              --format json \
-              --output "trivy-$APP_NAME.json" \
-              --severity CRITICAL,HIGH,MEDIUM \
-              --exit-code 0 \
-              "$IMAGE" || true
-
-            TOTAL=$(jq '[.Results[]?.Vulnerabilities // [] | .[]] | length' "trivy-$APP_NAME.json" 2>/dev/null || echo "?")
-            echo "📋 $APP_NAME: $TOTAL vulnerability/ies found"
-          done
-
-      - name: Write container scan summary
-        if: always()
-        run: |
-          echo "### 🐳 Container Scan Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| App | Critical | High | Medium |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|----------|------|--------|" >> $GITHUB_STEP_SUMMARY
-          for REPORT in trivy-*.json; do
-            [ -f "$REPORT" ] || continue
-            APP=$(echo "$REPORT" | sed 's/trivy-//;s/\.json//')
-            CRITICAL=$(jq '[.Results[]?.Vulnerabilities // [] | .[] | select(.Severity=="CRITICAL")] | length' "$REPORT" 2>/dev/null || echo "?")
-            HIGH=$(jq '[.Results[]?.Vulnerabilities // [] | .[] | select(.Severity=="HIGH")] | length' "$REPORT" 2>/dev/null || echo "?")
-            MEDIUM=$(jq '[.Results[]?.Vulnerabilities // [] | .[] | select(.Severity=="MEDIUM")] | length' "$REPORT" 2>/dev/null || echo "?")
-            echo "| \`$APP\` | $CRITICAL | $HIGH | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
-          done
-
-      - name: Upload Trivy reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trivy-container-reports
-          path: trivy-*.json
-          retention-days: 30
-
-
-  # ─────────────────────────────────────────────────────────────────
-  # 5. INFRASTRUCTURE AS CODE — Trivy IaC scan
-  #    Scans infra/ for Cloud Run and Cloud Build misconfigurations:
-  #    overly permissive IAM, missing resource limits, insecure
-  #    settings, and exposed ports. Uses Trivy (already in pipeline).
+  # 4. INFRASTRUCTURE AS CODE — Trivy IaC scan
+  #    Scans the repo for config misconfigurations (workflows,
+  #    manifests, etc.). Uses Trivy (already in pipeline).
   # ─────────────────────────────────────────────────────────────────
   iac-scan:
     name: 🏗️ IaC Scan (Trivy)
@@ -222,7 +142,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Trivy IaC scan on infra/
+      - name: Run Trivy IaC scan
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           scan-type: config
@@ -269,7 +189,7 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
-  # 6. GITHUB ACTIONS WORKFLOW HARDENING — zizmor
+  # 5. GITHUB ACTIONS WORKFLOW HARDENING — zizmor
   #    Audits all .github/workflows/*.yaml files for common security
   #    issues: script injection via untrusted inputs, overly broad
   #    permissions, unpinned action versions, and dangerous patterns
@@ -341,9 +261,9 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
-  # 7. SECURITY SUMMARY
+  # 6. SECURITY SUMMARY
   #    Writes a Markdown summary to the Actions run page so the
-  #    team gets a one-glance overview after every push to dev.
+  #    team gets a one-glance overview after every push to main.
   # ─────────────────────────────────────────────────────────────────
   security-summary:
     name: 📋 Security Summary
@@ -353,7 +273,6 @@ jobs:
       - secret-detection
       - dependency-audit
       - sast-semgrep
-      - container-scan
       - iac-scan
       - workflow-hardening
     steps:
@@ -366,7 +285,6 @@ jobs:
           echo "| 🔐 Secret Detection (Gitleaks) | \`${{ needs.secret-detection.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 📦 Dependency Audit (pnpm audit) | \`${{ needs.dependency-audit.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔬 SAST — Semgrep OSS | \`${{ needs.sast-semgrep.result }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🐳 Container Scan (Trivy) | \`${{ needs.container-scan.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 🏗️ IaC Scan (Trivy) | \`${{ needs.iac-scan.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| ⚙️ Workflow Hardening (zizmor) | \`${{ needs.workflow-hardening.result }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

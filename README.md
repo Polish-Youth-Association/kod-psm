@@ -1,85 +1,47 @@
 # kod-psm
 
-A monorepo for PSM, built around a clean domain-driven structure.  
-Each domain contains its own applications, services, and deployment pipeline.  
-Cloud Run + GitHub Actions power the deployment workflow, with automated review checks and branch protections.
+Code for the Polish Youth Association (PSM) staff portal.
+
+- **Frontend:** `apps/psm-portal`, a Next.js static export hosted on **GitHub Pages**.
+- **Backend:** `wix-velo/`, Wix Velo HTTP functions + **Wix CMS** for data.
 
 ---
 
-## 📁 Monorepo Structure
-### 📚 Repository Architecture Diagram
+## 📁 Repository Structure
 
 ```text
 kod-psm/
 │
-├── apps/                                  # Deployable applications/services
-│   ├── member-onboarding/                 # Example app (Cloud Run service)
-│   │   ├── src/
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   └── ...
-│   ├── certificate-generator/
-│   ├── persist-member/
-│   └── ...
+├── apps/
+│   └── psm-portal/          # Next.js staff portal (static export → GitHub Pages)
 │
-├── libs/                                  # Shared libraries (reusable code)
-│   ├── http-helpers/                      # HTTP server helpers
-│   ├── gcp-helpers/                       # GCP helpers
-│   └── ...
-│
-├── infra/                                 # Deployment/infra configs
-│   ├── apps.yaml
-│   └── cloudbuild.docker.yaml
+├── wix-velo/                # Version-controlled source for the Wix Velo backend
+│   ├── backend/             # http-functions + backend modules
+│   └── reference/           # Email/signature HTML + delegation codes kept from the retired services
 │
 ├── .github/
-│   └── workflows/                             # CI/CD pipelines
-│       ├── deploy.yaml
-│       └── infra-check.yaml
+│   └── workflows/
+│       ├── pages.yaml       # Build + deploy psm-portal to GitHub Pages
+│       └── security.yaml    # Report-only security scans
 │
-├── docs/                                      # Developer documentation
-│   └── *.md
-│
-├── pnpm-workspace.yaml                        # Defines workspace boundaries
+├── docs/                    # Developer documentation
+├── pnpm-workspace.yaml
 ├── pnpm-lock.yaml
 └── README.md
 ```
 
-### 🔍 Key Concepts
-
-#### **Apps**
-Everything is organized by deployable application under `apps/`.  
-Example: `apps/member-onboarding` is one self-contained Cloud Run service.
-
-Each app includes:
-- Its own `src/`
-- Its own build script
-- Independent Cloud Run deployment
-- Independent CI enforcement
-
-This keeps services loosely coupled but still easy to manage inside a single repo.
-
-#### **Workspaces**
-The repo uses **pnpm workspaces** for:
-- Fast installs  
-- Shared node_modules caching  
-- Easy cross-package development  
-- Consistent tooling across all services  
+The Cloud Run services that used to live in `apps/` (and the `libs/` they shared) have been
+removed. Their behavior was ported to `wix-velo/backend/`; see `wix-velo/CUTOVER.md` and git history.
 
 ---
 
 ## 🧰 Tech Stack
 
-### **Languages & Frameworks**
-- **TypeScript (Node.js 22)**
-- **Express** for HTTP servers
-- **pnpm** for package/workspace management
-
-### **Infrastructure**
-- **Google Cloud Run** for hosting all services
-- **Google Artifact Registry** for storing built images
-- **Cloud Build** used automatically by Cloud Run source deploys
-- **Workload Identity Federation** for GitHub → GCP authentication
-- **Identity-Aware Proxy (IAP)** planned for internal-site protection
+- **TypeScript**, **Next.js 16**, **React 19**, **Tailwind CSS**
+- **pnpm** workspaces
+- **Wix Velo** (backend functions + Secrets Manager) and **Wix CMS** (data)
+- **Google Workspace** APIs (account provisioning, Gmail) via a delegated service account
+- **Google Sign-In** gates the portal and every backend call
 
 ---
 
@@ -88,10 +50,9 @@ The repo uses **pnpm workspaces** for:
 One pipeline: **merge to `main` → auto-deploy.**
 
 **pages.yaml** | Builds the `psm-portal` static export and publishes it to **GitHub Pages** on every push to `main`.
-**security.yaml** | Report-only security scans (Gitleaks, pnpm audit, Semgrep, Trivy) on push to `main`.
+**security.yaml** | Report-only security scans (Gitleaks, pnpm audit, Semgrep, Trivy IaC, zizmor) on push to `main`.
 
-The backend runs on **Wix Velo** + **Wix CMS** (see `wix-velo/CUTOVER.md`); there is no Cloud Run /
-Artifact Registry / Cloud Build / Terraform pipeline anymore.
+The `wix-velo/` code is synced into the Wix site separately; it is not deployed by GitHub Actions.
 
 ---
 
@@ -99,8 +60,6 @@ Artifact Registry / Cloud Build / Terraform pipeline anymore.
 
 - **main** → the only long-lived branch; merging to it deploys to GitHub Pages.
 - Feature branches → daily development, PR'd into `main`.
-
-The old `dev`/`prod` split (staging vs. Cloud Run production) has been retired.
 
 ---
 
@@ -110,3 +69,5 @@ Install dependencies:
 
 ```bash
 pnpm install
+pnpm --filter @kod-psm/psm-portal run dev
+```
