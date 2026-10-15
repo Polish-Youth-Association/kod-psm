@@ -8,7 +8,7 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
 **Done in-repo (this branch):**
 - `wix-velo/backend/**` — full Velo backend (auth gate, llm/chat via Groq, counter, cert, queue, approve,
   member email, intake, signup, Wix contact, workspace auth, google workspace, volunteer, events).
-- `scripts/export-firestore-to-wix.ts` — read-only Firestore → CSV export.
+- `scripts/export-firestore-to-wix.ts` — read-only Firestore → CSV export (since removed; Firestore held no data).
 - `apps/psm-portal/src/lib/{wixApi,googleAuth}.ts` — frontend client + Google Sign-In (additive; not
   yet wired into pages).
 - `.github/workflows/pages.yaml` — GitHub Pages deploy (disabled until P5).
@@ -23,8 +23,8 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
 **Still to do (console/CLI — only you can):**
 - Set repo Actions vars `WIX_FUNCTIONS_BASE` + `GOOGLE_OAUTH_CLIENT_ID` so the deployed site works.
 - Tear down live GCP resources (Cloud Run, Artifact Registry, Cloud Build, WIF, GCS, Firestore,
-  Secret Manager) per the plan's teardown order. The Express services under `apps/*` remain in the
-  repo for now (pruned later), but nothing deploys them anymore.
+  Secret Manager) per the plan's teardown order. The old Express services under `apps/*` and `libs/*`
+  have been removed from the repo; their templates live in `wix-velo/reference/`.
 
 ## P0 — Stand up Wix (console)
 1. Content Manager → create collections **Members, Counters, MemberIds, VolunteerRequests**
@@ -32,9 +32,9 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
    `Members.memberId`.
 2. Secrets Manager → add all secrets listed in `wix-velo/README.md`.
 3. Package Manager → install `jsonwebtoken`, `pdf-lib`, `@pdf-lib/fontkit`, `zipcodes`, `nodemailer`.
-4. Upload `apps/certificate-generator/templates/CertTemplate.pdf` and
-   `templates/fonts/WixMadeforText-Bold.ttf` to Wix Media; set `TEMPLATE_URL`/`FONT_URL` in `cert.js`.
-5. Paste the email/signature HTML into `email.js` (`TEMPLATE_HTML`) and `templates.js`.
+4. Upload `apps/psm-portal/public/code_assets/CertTemplate.pdf` and
+   `WixMadeforText-Bold.ttf` (same folder) to Wix Media; set `TEMPLATE_URL`/`FONT_URL` in `cert.js`.
+5. Paste the email/signature HTML from `wix-velo/reference/` into `email.js` (`TEMPLATE_HTML`) and `templates.js`.
 6. Create a Google OAuth 2.0 **Web client id**; put it in both `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
    (frontend) and the Velo secret `GOOGLE_OAUTH_CLIENT_ID`.
 7. Sync `wix-velo/backend/**` into the site (`wix dev`/`wix push` or Studio↔GitHub).

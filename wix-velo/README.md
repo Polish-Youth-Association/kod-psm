@@ -30,8 +30,9 @@ wix-velo/
     events.js            # Wix Forms/Automation submit -> intake()/signup()
     lib/
       geoPrefix.js       # canonical prefix resolver (ported from member-onboarding/geoPrefix.ts)
+  reference/             # email/signature HTML + geo_code.json kept from the retired apps/* services
   assets/
-    CertTemplate.pdf     # copy of apps/certificate-generator/templates/CertTemplate.pdf
+    CertTemplate.pdf     # copy of apps/psm-portal/public/code_assets/CertTemplate.pdf
     WixMadeforText-Bold.ttf
 ```
 

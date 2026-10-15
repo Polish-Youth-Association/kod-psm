@@ -1,6 +1,0 @@
-serviceAccount: member-onboarding-svc@PROJECT_ID.iam.gserviceaccount.com
-roles:
-  - roles/run.invoker
-  - roles/datastore.user
-
-resources: []

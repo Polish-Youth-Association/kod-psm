@@ -1,5 +1,0 @@
-serviceAccount: psm-portal-svc@PROJECT_ID.iam.gserviceaccount.com
-roles:
-  - roles/run.invoker
-
-resources: []

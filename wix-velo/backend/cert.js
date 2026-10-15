@@ -3,8 +3,8 @@
 // uploads the PDF to Wix Media, and returns the media URL + id.
 //
 // The template PDF and bold font are fetched once from Wix Media and cached in module scope.
-// Upload apps/certificate-generator/templates/CertTemplate.pdf and
-// templates/fonts/WixMadeforText-Bold.ttf to your Wix Media, then set the two URLs below
+// Upload apps/psm-portal/public/code_assets/CertTemplate.pdf and
+// WixMadeforText-Bold.ttf (same folder) to your Wix Media, then set the two URLs below
 // (or store them as secrets/config). Install `pdf-lib` + `@pdf-lib/fontkit` in the Velo Package Manager.
 
 import { PDFDocument, rgb } from 'pdf-lib';

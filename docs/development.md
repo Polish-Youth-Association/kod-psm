@@ -6,30 +6,20 @@ From repo root:
 pnpm install
 ```
 
+## Run the portal locally
+```
+pnpm --filter @kod-psm/psm-portal run dev
+```
+Set `NEXT_PUBLIC_WIX_FUNCTIONS_BASE` and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` to talk to a backend.
+
 ## Build
-Build all workspaces:
 ```
-pnpm build
-```
-
-Build a single app:
-```
-pnpm --filter @kod-psm/<app> run build
-```
-
-## Run locally
-Most apps expose:
-```
-pnpm --filter @kod-psm/<app> run dev
+pnpm --filter @kod-psm/psm-portal run build   # static export -> apps/psm-portal/out
 ```
 
 ## Environment variables
-- Local secrets go in an app-level `.env` file.
+- Local values go in `apps/psm-portal/.env.local`.
 - Do not commit `.env` files.
-- See `docs/secrets.md` for GCP Secret Manager workflow.
 
-## Create a new app
-```
-pnpm create:app
-```
-See `docs/create-an-app.md` for details.
+## Backend
+The Velo backend in `wix-velo/` runs inside the Wix site. See `wix-velo/README.md` for syncing it.

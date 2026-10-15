@@ -53,7 +53,7 @@ export async function sendMail(msg) {
 /**
  * Render the welcome email HTML. Mirrors renderNewMemberEmail() in the old server.ts:
  * supports {{placeholder}} and legacy [Bracket] styles. TEMPLATE_HTML is the contents of
- * apps/member-onboarding/templates/NewMembersEmailTemplate.html (paste it below or load from Media).
+ * wix-velo/reference/NewMembersEmailTemplate.html (paste it below or load from Media).
  */
 const TEMPLATE_HTML = null; // TODO: paste NewMembersEmailTemplate.html contents here, or load from Wix Media.
 
