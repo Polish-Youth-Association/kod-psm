@@ -26,11 +26,12 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
   service accounts removed from `psm-platform-prod`; billing unlinked from every project.
 
 **What's left in GCP (no billing, $0):**
-- `gen-lang-client-0350015145` ("PSM-Portal"): the Google Sign-In OAuth web client used by the portal
-  and checked by the Velo `auth.js` (`GOOGLE_OAUTH_CLIENT_ID`).
+- `platform-psm` ("PSM Platform"): the Google Sign-In OAuth web client used by the portal (repo var and
+  Velo secret `GOOGLE_OAUTH_CLIENT_ID`), plus the `workspace-automation` SA reserved for the Workspace
+  delegation move.
 - `psm-platform-prod` ("PSM-Platform"): only `volunteer-onboarding-svc`, the domain-wide-delegation
   service account whose key is the Velo secret `GOOGLE_SA_KEY_JSON` (member welcome emails, volunteer
-  provisioning, Gmail signatures). Only the Admin SDK, Gmail and IAM APIs are enabled.
+  provisioning, Gmail signatures). To be retired once that moves to `platform-psm`.
 
 ## P0 — Stand up Wix (console)
 1. Content Manager → create collections **Members, Counters, MemberIds, VolunteerRequests**
