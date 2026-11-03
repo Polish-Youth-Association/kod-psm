@@ -20,11 +20,18 @@ Nothing destructive to the live GCP system is done until the Wix backend is veri
   `pages.yaml` auto-deploy re-enabled on push to `main`.
 - P6 (repo side): deleted `infra/**`, `.gcloudignore`, and the GCP GitHub Actions workflows.
 
-**Still to do (console/CLI — only you can):**
-- Set repo Actions vars `WIX_FUNCTIONS_BASE` + `GOOGLE_OAUTH_CLIENT_ID` so the deployed site works.
-- Tear down live GCP resources (Cloud Run, Artifact Registry, Cloud Build, WIF, GCS, Firestore,
-  Secret Manager) per the plan's teardown order. The old Express services under `apps/*` and `libs/*`
-  have been removed from the repo; their templates live in `wix-velo/reference/`.
+**Done (console):**
+- Repo Actions vars `WIX_FUNCTIONS_BASE` + `GOOGLE_OAUTH_CLIENT_ID` are set.
+- GCP teardown (2026-11-03): `psm-platform-dev` deleted; Cloud Run, buckets, Firestore and unused
+  service accounts removed from `psm-platform-prod`; billing unlinked from every project.
+
+**What's left in GCP (no billing, $0):**
+- `platform-psm` ("PSM Platform"): the Google Sign-In OAuth web client used by the portal (repo var and
+  Velo secret `GOOGLE_OAUTH_CLIENT_ID`), plus the `workspace-automation` SA reserved for the Workspace
+  delegation move.
+- `psm-platform-prod` ("PSM-Platform"): only `volunteer-onboarding-svc`, the domain-wide-delegation
+  service account whose key is the Velo secret `GOOGLE_SA_KEY_JSON` (member welcome emails, volunteer
+  provisioning, Gmail signatures). To be retired once that moves to `platform-psm`.
 
 ## P0 — Stand up Wix (console)
 1. Content Manager → create collections **Members, Counters, MemberIds, VolunteerRequests**
