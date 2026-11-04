@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useUser } from "./userContext";
 import { wixApi } from "@/lib/wixApi";
+import { IconSparkles } from "./icons";
 
 const CONTEXT_WINDOW = 16_384;
 
@@ -69,12 +70,17 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <>
       {/* Sidebar panel */}
-      <aside className="h-full w-[420px] bg-white border-l border-brand-border flex flex-col">
+      <aside className="h-full w-full sm:w-[420px] bg-white/95 backdrop-blur-xl border-l border-black/[0.06] shadow-2xl lg:shadow-none flex flex-col">
         {/* Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-brand-border shrink-0">
-          <div>
-            <p className="font-semibold text-brand-dark text-sm">PSM Assistant</p>
-            <p className="text-xs text-brand-gray">Powered by Llama 3.3 (Groq)</p>
+        <div className="h-16 flex items-center justify-between px-5 border-b border-black/[0.06] shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-red to-brand-rose text-white flex items-center justify-center shadow-glow">
+              <IconSparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-brand-ink text-sm">PSM Assistant</p>
+              <p className="text-xs text-brand-gray">Llama 3.3 on Groq</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {messages.length > 0 && (
@@ -116,8 +122,8 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
                 className={[
                   "max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-shadow duration-200",
                   m.role === "user"
-                    ? "bg-brand-red text-white rounded-br-sm whitespace-pre-wrap hover:shadow-md"
-                    : "bg-gray-100 text-brand-dark rounded-bl-sm hover:bg-gray-200/70",
+                    ? "bg-gradient-to-br from-brand-red to-brand-rose text-white rounded-br-md whitespace-pre-wrap shadow-glow"
+                    : "bg-white border border-black/[0.06] shadow-card text-brand-dark rounded-bl-md",
                 ].join(" ")}
               >
                 {m.role === "user" ? m.text : (
@@ -139,7 +145,7 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
 
           {loading && (
             <div className="flex justify-start chat-message-in">
-              <div className="chat-typing bg-gray-100 text-brand-gray px-4 py-3 rounded-2xl rounded-bl-sm text-sm">
+              <div className="chat-typing bg-white border border-black/[0.06] text-brand-gray px-4 py-3 rounded-2xl rounded-bl-sm text-sm">
                 <span className="inline-flex gap-1.5 items-center">
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-gray animate-bounce" style={{ animationDelay: "0ms" }} />
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-gray animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -158,7 +164,7 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
         )}
 
         {/* Input */}
-        <div className="shrink-0 mx-4 mb-4 flex gap-2 items-center border border-brand-border rounded-2xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-brand-red/30 focus-within:border-brand-red transition-colors">
+        <div className="shrink-0 mx-4 mb-4 flex gap-2 items-center bg-white border border-gray-200 rounded-2xl shadow-card px-3 py-2.5 focus-within:ring-4 focus-within:ring-brand-red/10 focus-within:border-brand-red transition-colors">
           <span className={`text-xs font-mono shrink-0 ${contextPct >= 90 ? "text-red-500" : contextPct >= 70 ? "text-yellow-500" : "text-brand-gray"}`}>
             {contextPct}%
           </span>
@@ -175,7 +181,7 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
           <button
             onClick={send}
             disabled={!input.trim() || loading}
-            className="px-3 py-1.5 rounded-xl bg-brand-red text-white text-xs font-semibold hover:bg-brand-red-dark active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 shrink-0"
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-br from-brand-red to-brand-rose text-white text-xs font-semibold shadow-glow active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 shrink-0"
           >
             Send
           </button>

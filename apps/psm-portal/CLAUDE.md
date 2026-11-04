@@ -23,8 +23,9 @@ pnpm --filter @kod-psm/psm-portal run build
 |-------|-------------|
 | `/` | Home — tool cards linking to each feature |
 | `/volunteer-onboarding` | Form to onboard a new volunteer (creates Google Workspace account, Slack, groups) |
-| `/member-onboarding` | Form to send a welcome email to a new member with optional certificate attachment |
-| `/chat` | Gemini-powered PSM assistant (session-based, history sent with each request) |
+| `/member-onboarding` | Send a welcome email to a member by hand; the backend generates + attaches their certificate |
+| `/onboarding-queue` | Pending member sign-ups: assign ID, approve (welcome email + certificate) or delete |
+| `/chat` | PSM assistant, Llama 3.3 on Groq via Velo (session-based, history sent with each request) |
 
 ## Backend calls
 

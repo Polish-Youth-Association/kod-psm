@@ -1,32 +1,36 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { wixApi } from "@/lib/wixApi";
+import { Field, PageHeader, Spinner } from "@/components/field";
+import { useToast } from "@/components/toast";
+import { IconAward, IconSend } from "@/components/icons";
 
 type MemberOnboardingRecord = {
   id: string;
   sentAt: string;
   firstNamePolish: string;
-  firstNameEnglish: string;
+  fullName: string;
   email: string;
   memberId: string;
-  hasCertificate: boolean;
+  certStatus: string;
 };
 
 function isEmail(s: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 }
 
+// Mirrors the backend's normalizeMemberId: letters + digits only, uppercase.
+function normalizeMemberId(s: string) {
+  return s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+const EMPTY = { firstNamePolish: "", firstNameEnglish: "", lastName: "", email: "", memberId: "" };
+
 export default function MemberOnboardingPage() {
-  const [form, setForm] = useState({
-    firstNamePolish: "",
-    firstNameEnglish: "",
-    email: "",
-    memberId: ""
-  });
-  const [certificate, setCertificate] = useState<File | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
+  const [form, setForm] = useState(EMPTY);
+  const [attachCertificate, setAttachCertificate] = useState(true);
   const [records, setRecords] = useState<MemberOnboardingRecord[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -35,242 +39,220 @@ export default function MemberOnboardingPage() {
       form.firstNamePolish.trim().length > 0 &&
       form.firstNameEnglish.trim().length > 0 &&
       isEmail(form.email) &&
-      form.memberId.trim().length > 0
+      normalizeMemberId(form.memberId).length > 0 &&
+      (!attachCertificate || form.lastName.trim().length > 0)
     );
-  }, [form]);
+  }, [form, attachCertificate]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-
     if (!canSubmit) {
-      setError("Fill in all required fields.");
+      toast("error", "Missing info", "Fill in all required fields.");
       return;
     }
 
     setSubmitting(true);
     try {
-      // NOTE: certificate attachment via this manual form is not yet supported in the static/Wix
-      // flow — the cert is delivered through the queue → approve path (which renders + attaches it).
-      // To support manual attachment, upload `certificate` to Wix Media and pass its URL as
-      // `certFileUrl` to sendMemberEmail.
+      const memberId = normalizeMemberId(form.memberId);
+      // The backend renders the certificate (same template as the queue's Approve), saves it to
+      // the Membership Certificates Drive folder, and attaches it to the email.
       const json = await wixApi.sendMemberEmail({
         firstNamePolish: form.firstNamePolish.trim(),
         firstNameEnglish: form.firstNameEnglish.trim(),
+        lastName: form.lastName.trim(),
         email: form.email.trim(),
-        memberId: form.memberId.trim(),
+        memberId,
+        attachCertificate,
       });
 
       if (!json?.ok) {
         throw new Error((json as any)?.error ?? "Backend rejected the request");
       }
 
+      const certStatus = attachCertificate ? json.certStatus ?? "generated" : "skipped";
       setRecords((prev) => [
         {
           id: `rec_${Math.random().toString(36).slice(2, 10)}`,
           sentAt: new Date().toISOString(),
           firstNamePolish: form.firstNamePolish.trim(),
-          firstNameEnglish: form.firstNameEnglish.trim(),
+          fullName: `${form.firstNameEnglish.trim()} ${form.lastName.trim()}`.trim(),
           email: form.email.trim(),
-          memberId: form.memberId.trim(),
-          hasCertificate: !!certificate
+          memberId,
+          certStatus,
         },
-        ...prev
+        ...prev,
       ]);
 
-      setForm({ firstNamePolish: "", firstNameEnglish: "", email: "", memberId: "" });
-      setCertificate(null);
-      if (fileRef.current) fileRef.current.value = "";
+      toast(
+        certStatus === "failed" ? "error" : "success",
+        certStatus === "failed" ? "Email sent, certificate failed" : "Welcome email sent",
+        `${memberId} → ${form.email.trim()}`
+      );
+      setForm(EMPTY);
     } catch (err: any) {
-      setError(err?.message ?? String(err));
+      toast("error", "Couldn't send the email", err?.message ?? String(err));
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10">
-      {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-brand-dark mb-2">Member Onboarding</h1>
-        <p className="text-brand-gray text-sm max-w-2xl">
-          Send a welcome email to a new PSM member with their membership ID and an optional
-          certificate attachment.
-        </p>
-      </div>
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <PageHeader eyebrow="Members" title="Member Onboarding">
+        Send a welcome email to a new member with their membership ID. Their certificate is generated
+        and attached automatically, and saved to the Membership Certificates Drive.
+      </PageHeader>
 
       {/* Form card */}
-      <section className="bg-white border border-brand-border rounded-2xl p-6 mb-8">
-        <h2 className="text-base font-semibold text-brand-dark mb-5">Send onboarding email</h2>
-
-        <form onSubmit={submit} className="flex flex-col gap-4">
-          {/* Row: Polish name + English name */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <section className="card p-6 sm:p-8 mb-8 animate-fade-up" style={{ animationDelay: "80ms" }}>
+        <form onSubmit={submit} className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field
-              label="First Name (Polish) *"
+              label="First name (Polish)"
+              required
               value={form.firstNamePolish}
               onChange={(v) => setForm((f) => ({ ...f, firstNamePolish: v }))}
               placeholder="Michał"
+              hint="Used in the email greeting"
             />
             <Field
-              label="First Name (English) *"
+              label="First name (English)"
+              required
               value={form.firstNameEnglish}
               onChange={(v) => setForm((f) => ({ ...f, firstNameEnglish: v }))}
               placeholder="Michael"
-            />
-          </div>
-
-          {/* Row: Email + Member ID */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field
-              label="Recipient Email *"
-              value={form.email}
-              onChange={(v) => setForm((f) => ({ ...f, email: v }))}
-              type="email"
-              placeholder="member@example.com"
-              autoComplete="email"
+              autoComplete="given-name"
             />
             <Field
-              label="Member ID *"
+              label="Last name"
+              required={attachCertificate}
+              value={form.lastName}
+              onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
+              placeholder="Kowalski"
+              autoComplete="family-name"
+              hint="Printed on the certificate"
+            />
+            <Field
+              label="Member ID"
+              required
               value={form.memberId}
               onChange={(v) => setForm((f) => ({ ...f, memberId: v }))}
               placeholder="DNY62120899"
+              hint={
+                form.memberId && normalizeMemberId(form.memberId) !== form.memberId
+                  ? `Will be sent as ${normalizeMemberId(form.memberId)}`
+                  : "Letters and digits only, no dashes"
+              }
             />
           </div>
+          <Field
+            label="Recipient email"
+            required
+            value={form.email}
+            onChange={(v) => setForm((f) => ({ ...f, email: v }))}
+            type="email"
+            placeholder="member@example.com"
+            autoComplete="email"
+          />
 
-          {/* Certificate upload */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Certificate PDF (optional)
-            </span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setCertificate(e.target.files?.[0] ?? null)}
-              className="text-sm text-brand-dark file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-red-light file:text-brand-red file:text-xs file:font-medium hover:file:bg-red-100 cursor-pointer"
-            />
-            {certificate && (
-              <span className="text-xs text-brand-gray">{certificate.name}</span>
-            )}
-          </label>
-
-          {/* Submit row */}
-          <div className="flex items-center gap-4 pt-1">
-            <button
-              type="submit"
-              disabled={!canSubmit || submitting}
-              className="px-5 py-2.5 rounded-lg bg-brand-red text-white text-sm font-semibold hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          {/* Certificate toggle */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={attachCertificate}
+            onClick={() => setAttachCertificate((v) => !v)}
+            className={[
+              "flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-200",
+              attachCertificate
+                ? "border-brand-red/30 bg-brand-red-light/70"
+                : "border-gray-200 bg-white hover:border-gray-300",
+            ].join(" ")}
+          >
+            <div
+              className={[
+                "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-colors",
+                attachCertificate ? "bg-gradient-to-br from-brand-red to-brand-rose text-white" : "bg-gray-100 text-gray-400",
+              ].join(" ")}
             >
-              {submitting ? "Sending..." : "Send onboarding email"}
-            </button>
-            <span className="text-xs text-brand-gray">* required</span>
-          </div>
+              <IconAward className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-brand-ink">Attach membership certificate</p>
+              <p className="text-xs text-gray-600">Generated from the official template with today&apos;s date</p>
+            </div>
+            <span
+              className={[
+                "relative w-11 h-6 shrink-0 rounded-full transition-colors",
+                attachCertificate ? "bg-brand-red" : "bg-gray-300",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform",
+                  attachCertificate ? "translate-x-5" : "",
+                ].join(" ")}
+              />
+            </span>
+          </button>
 
-          {error && (
-            <p className="text-sm text-red-600 whitespace-pre-wrap">{error}</p>
-          )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+            <button type="submit" disabled={!canSubmit || submitting} className="btn-primary w-full sm:w-auto">
+              {submitting ? <Spinner /> : <IconSend className="w-4 h-4" />}
+              {submitting ? "Sending…" : "Send welcome email"}
+            </button>
+            <span className="text-xs text-gray-500">
+              <span className="text-brand-red">*</span> required · CC&apos;d to records@
+            </span>
+          </div>
         </form>
       </section>
 
       {/* Recent sends */}
-      <section className="bg-white border border-brand-border rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-brand-border">
-          <h2 className="text-base font-semibold text-brand-dark">Recent sends</h2>
+      <section className="card overflow-hidden animate-fade-up" style={{ animationDelay: "160ms" }}>
+        <div className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between">
+          <h2 className="text-base font-bold text-brand-ink">Sent this session</h2>
+          {records.length > 0 && <span className="badge bg-gray-100 text-gray-700">{records.length}</span>}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[700px]">
-            <thead>
-              <tr className="bg-gray-50">
-                {[
-                  "Sent",
-                  "Member ID",
-                  "Polish Name",
-                  "English Name",
-                  "Recipient Email",
-                  "Certificate",
-                  "Status"
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-brand-border"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {records.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-sm text-brand-gray text-center">
-                    No emails sent yet. Fill in the form above to get started.
-                  </td>
-                </tr>
-              ) : (
-                records.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {new Date(r.sentAt).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-mono text-brand-gray border-b border-brand-border whitespace-nowrap">
-                      {r.memberId}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {r.firstNamePolish}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {r.firstNameEnglish}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {r.email}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {r.hasCertificate ? "Yes" : "—"}
-                    </td>
-                    <td className="px-4 py-3 border-b border-brand-border whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
-                        Sent
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        {records.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center">
+              <IconSend className="w-6 h-6" />
+            </div>
+            <p className="text-sm text-gray-500">Nothing sent yet. Emails you send show up here.</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-black/[0.06]">
+            {records.map((r) => (
+              <li key={r.id} className="px-6 py-4 flex items-center gap-4 animate-fade-up">
+                <div className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-brand-red to-brand-rose text-white font-bold flex items-center justify-center">
+                  {r.firstNamePolish.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-brand-ink truncate">
+                    {r.fullName} <span className="font-mono font-medium text-gray-500">· {r.memberId}</span>
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {r.email} · {new Date(r.sentAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </p>
+                </div>
+                <span
+                  className={[
+                    "badge",
+                    r.certStatus === "failed"
+                      ? "bg-red-50 text-red-700"
+                      : r.certStatus === "skipped"
+                      ? "bg-gray-100 text-gray-600"
+                      : "bg-emerald-50 text-emerald-700",
+                  ].join(" ")}
+                >
+                  {r.certStatus === "failed" ? "Cert failed" : r.certStatus === "skipped" ? "No cert" : "Sent + cert"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type,
-  autoComplete
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: React.HTMLInputTypeAttribute;
-  autoComplete?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
-      <input
-        value={value}
-        placeholder={placeholder}
-        type={type ?? "text"}
-        autoComplete={autoComplete}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-10 px-3 rounded-lg border border-brand-border text-sm focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red"
-      />
-    </label>
   );
 }

@@ -44,7 +44,7 @@ export const wixApi = {
     }),
 
   sendMemberEmail: (payload: Record<string, unknown>) =>
-    call<{ ok: boolean; message?: string }>("POST", "/member", payload),
+    call<{ ok: boolean; message?: string; certStatus?: string; certUrl?: string }>("POST", "/member", payload),
 
   provisionVolunteer: (payload: Record<string, unknown>) =>
     call<{ ok: boolean; requestId: string; user: any; tempPassword: string }>("POST", "/volunteer", payload),

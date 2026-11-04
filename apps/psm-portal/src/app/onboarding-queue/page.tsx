@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { wixApi } from "@/lib/wixApi";
+import { PageHeader, Spinner } from "@/components/field";
+import { useToast } from "@/components/toast";
+import { IconCheck, IconRefresh, IconTrash } from "@/components/icons";
 
 type Member = {
   docId: string;
@@ -11,12 +14,12 @@ type Member = {
   lastName: string;
   email: string;
   prefix: string;
-  address: {
+  address?: {
     line1?: string;
     city?: string;
     state?: string;
-    postalCode: string;
-    country: string;
+    postalCode?: string;
+    country?: string;
   };
   birthday?: string;
   phone?: string;
@@ -74,6 +77,7 @@ const SEVERITY_ICON: Record<FlagSeverity, string> = {
 };
 
 export default function OnboardingQueuePage() {
+  const toast = useToast();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,14 +131,16 @@ export default function OnboardingQueuePage() {
 
       setRowSuccess((prev) => ({
         ...prev,
-        [member.docId]: `Approved! Member ID: ${data.memberId}`,
+        [member.docId]: `Approved · ${data.memberId}`,
       }));
+      toast("success", `${member.fullName} approved`, `Welcome email sent to ${member.email}`);
       // Remove from list after a short delay
       setTimeout(() => {
         setMembers((prev) => prev.filter((m) => m.docId !== member.docId));
       }, 2000);
     } catch (e: any) {
       setRowErrors((prev) => ({ ...prev, [member.docId]: e?.message ?? String(e) }));
+      toast("error", "Approval failed", e?.message ?? String(e));
     } finally {
       setApproving((prev) => ({ ...prev, [member.docId]: false }));
     }
@@ -142,7 +148,7 @@ export default function OnboardingQueuePage() {
 
   async function handleDelete(member: Member) {
     const confirmed = window.confirm(
-      `Delete ${member.fullName} (${member.memberId}) from the queue?\n\nThis removes the CMS record. The certificate PDF in Wix Media and the Wix contact are preserved.`
+      `Delete ${member.fullName} (${member.memberId}) from the queue?\n\nThis removes the CMS record. Certificates in Drive and the Wix contact are kept.`
     );
     if (!confirmed) return;
 
@@ -162,58 +168,76 @@ export default function OnboardingQueuePage() {
   }
 
   const certBadge = (status: Member["certStatus"]) => {
-    const base = "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium";
-    if (status === "generated") return <span className={`${base} bg-green-100 text-green-800`}>Certificate ready</span>;
-    if (status === "failed") return <span className={`${base} bg-red-100 text-red-700`}>Cert failed</span>;
-    return <span className={`${base} bg-yellow-100 text-yellow-800`}>Cert pending</span>;
+    if (status === "generated") return <span className="badge bg-emerald-50 text-emerald-700">Certificate ready</span>;
+    if (status === "failed") return <span className="badge bg-red-50 text-red-700">Cert failed</span>;
+    return <span className="badge bg-amber-50 text-amber-700">Cert on approval</span>;
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-dark">Member Onboarding Queue</h1>
-          <p className="text-sm text-brand-gray mt-1">
-            Review new members submitted via Wix. Enter their name in Polish and approve to send the welcome email.
-          </p>
-        </div>
-        <button
-          onClick={fetchQueue}
-          disabled={loading}
-          className="px-4 py-2 rounded-lg text-sm font-medium border border-brand-border text-brand-gray hover:border-brand-red hover:text-brand-red transition-colors disabled:opacity-50"
-        >
-          {loading ? "Refreshing…" : "Refresh"}
-        </button>
-      </div>
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <PageHeader
+        eyebrow="Members"
+        title="Onboarding Queue"
+        action={
+          <button onClick={fetchQueue} disabled={loading} className="btn-ghost self-start sm:self-auto">
+            <IconRefresh className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "Refreshing…" : "Refresh"}
+          </button>
+        }
+      >
+        New sign-ups from the website. Add their Polish first name and Member ID, then approve to send the
+        welcome email with their certificate.
+        {!loading && members.length > 0 && (
+          <span className="ml-2 badge bg-brand-red-light text-brand-red align-middle">{members.length} waiting</span>
+        )}
+      </PageHeader>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
+        <div className="mb-6 p-4 rounded-2xl border border-red-200 bg-red-50/80 text-red-700 text-sm animate-fade-up">{error}</div>
+      )}
+
+      {loading && members.length === 0 && (
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="card p-6">
+              <div className="skeleton h-5 w-48 mb-3" />
+              <div className="skeleton h-4 w-72 mb-6" />
+              <div className="skeleton h-11 w-full" />
+            </div>
+          ))}
         </div>
       )}
 
       {!loading && members.length === 0 && !error && (
-        <div className="text-center py-20 text-brand-gray text-sm">
-          No members pending onboarding.
+        <div className="card py-20 px-6 text-center animate-fade-up">
+          <div className="mx-auto mb-4 w-16 h-16 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-lg">
+            <IconCheck className="w-8 h-8" />
+          </div>
+          <p className="text-lg font-bold text-brand-ink">All caught up</p>
+          <p className="text-sm text-gray-500 mt-1">No members waiting for onboarding.</p>
         </div>
       )}
 
       {members.length > 0 && (
         <div className="space-y-4">
-          {members.map((member) => (
+          {members.map((member, i) => (
             <div
               key={member.docId}
-              className="bg-white border border-brand-border rounded-xl p-5 shadow-sm"
+              style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}
+              className={[
+                "card p-5 sm:p-6 animate-fade-up transition-all duration-300",
+                rowSuccess[member.docId] ? "border-emerald-300 bg-emerald-50/60" : "hover:shadow-lift",
+              ].join(" ")}
             >
               {member.flags && member.flags.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-2">
+                <div className="mb-4 flex flex-wrap gap-2">
                   {member.flags.map((flag) => {
                     const meta = FLAG_LABELS[flag] ?? { label: flag, tooltip: "", severity: "medium" as FlagSeverity };
                     return (
                       <span
                         key={flag}
                         title={meta.tooltip}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border cursor-help ${SEVERITY_STYLES[meta.severity]}`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border cursor-help ${SEVERITY_STYLES[meta.severity]}`}
                       >
                         {SEVERITY_ICON[meta.severity]} {meta.label}
                       </span>
@@ -221,64 +245,67 @@ export default function OnboardingQueuePage() {
                   })}
                 </div>
               )}
-              <div className="flex flex-wrap gap-6 mb-4">
+
+              <div className="flex flex-col md:flex-row gap-5 mb-5">
                 {/* Identity */}
-                <div className="flex-1 min-w-[200px]">
-                  <p className="text-xs text-brand-gray uppercase tracking-wide mb-1">Member</p>
-                  <p className="font-semibold text-brand-dark">{member.fullName}</p>
-                  <p className="text-sm text-brand-gray">{member.email}</p>
-                  {member.phone && <p className="text-sm text-brand-gray">{member.phone}</p>}
-                  {member.birthday && (
-                    <p className="text-sm text-brand-gray">DOB: {member.birthday}</p>
-                  )}
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-brand-red to-brand-rose text-white text-lg font-bold flex items-center justify-center shadow-glow">
+                    {(member.firstName || member.fullName || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-brand-ink truncate">{member.fullName}</p>
+                    <p className="text-sm text-gray-600 truncate">{member.email}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {[member.phone, member.birthday && `Born ${member.birthday}`].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Address */}
-                <div className="flex-1 min-w-[180px]">
-                  <p className="text-xs text-brand-gray uppercase tracking-wide mb-1">Address</p>
-                  {member.address.line1 && (
-                    <p className="text-sm text-brand-dark">{member.address.line1}</p>
-                  )}
-                  <p className="text-sm text-brand-dark">
-                    {[member.address.city, member.address.state].filter(Boolean).join(", ")}{" "}
-                    {member.address.postalCode}
+                <div className="md:w-56 text-sm text-gray-700">
+                  <p className="field-label mb-1">Address</p>
+                  {member.address?.line1 && <p>{member.address.line1}</p>}
+                  <p>
+                    {[member.address?.city, member.address?.state].filter(Boolean).join(", ")} {member.address?.postalCode}
                   </p>
-                  <p className="text-sm text-brand-dark">{member.address.country}</p>
+                  <p className="text-gray-500">{member.address?.country}</p>
                 </div>
 
                 {/* Membership */}
-                <div className="flex-1 min-w-[160px]">
-                  <p className="text-xs text-brand-gray uppercase tracking-wide mb-1">Membership</p>
-                  <p className="font-mono text-brand-dark font-semibold">{member.memberId}</p>
-                  <p className="text-sm text-brand-gray">Prefix: {member.prefix}</p>
-                  <div className="mt-1">{certBadge(member.certStatus)}</div>
+                <div className="md:w-44">
+                  <p className="field-label mb-1">Membership</p>
+                  <p className="font-mono font-bold text-brand-ink">{member.memberId || "Not assigned"}</p>
+                  {member.prefix && <p className="text-xs text-gray-500">Prefix {member.prefix}</p>}
+                  <div className="mt-1.5">{certBadge(member.certStatus)}</div>
                 </div>
               </div>
 
               {/* Approval row */}
-              <div className="border-t border-brand-border pt-4">
+              <div className="border-t border-black/[0.06] pt-5">
                 {rowSuccess[member.docId] ? (
-                  <p className="text-sm text-green-700 font-medium">{rowSuccess[member.docId]}</p>
+                  <p className="flex items-center gap-2 text-sm text-emerald-700 font-semibold">
+                    <IconCheck className="w-5 h-5" /> {rowSuccess[member.docId]}
+                  </p>
                 ) : (
-                  <div className="flex items-start gap-3 flex-wrap">
-                    <div className="min-w-[140px]">
-                      <label className="block text-xs text-brand-gray mb-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-[10rem_1fr_auto_auto] gap-3 items-end">
+                    <label className="flex flex-col gap-1.5">
+                      <span className="field-label">
                         Member ID <span className="text-brand-red">*</span>
-                      </label>
+                      </span>
                       <input
                         type="text"
-                        placeholder="e.g. DNY42"
+                        placeholder="DNY62120899"
                         value={memberIdInputs[member.docId] ?? member.memberId ?? ""}
                         onChange={(e) =>
                           setMemberIdInputs((prev) => ({ ...prev, [member.docId]: e.target.value }))
                         }
-                        className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red"
+                        className="field-input font-mono"
                       />
-                    </div>
-                    <div className="flex-1 min-w-[220px]">
-                      <label className="block text-xs text-brand-gray mb-1">
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      <span className="field-label">
                         First name in Polish <span className="text-brand-red">*</span>
-                      </label>
+                      </span>
                       <input
                         type="text"
                         placeholder="e.g. Katarzyna"
@@ -286,26 +313,29 @@ export default function OnboardingQueuePage() {
                         onChange={(e) =>
                           setPolishNames((prev) => ({ ...prev, [member.docId]: e.target.value }))
                         }
-                        className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red"
+                        className="field-input"
                       />
-                      {rowErrors[member.docId] && (
-                        <p className="text-xs text-red-600 mt-1">{rowErrors[member.docId]}</p>
-                      )}
-                    </div>
+                    </label>
                     <button
                       onClick={() => handleApprove(member)}
                       disabled={approving[member.docId] || deleting[member.docId]}
-                      className="mt-5 px-5 py-2 rounded-lg text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors disabled:opacity-50"
+                      className="btn-primary"
                     >
-                      {approving[member.docId] ? "Sending…" : "Approve & Send Email"}
+                      {approving[member.docId] ? <Spinner /> : <IconCheck className="w-4 h-4" />}
+                      {approving[member.docId] ? "Sending…" : "Approve & send"}
                     </button>
                     <button
                       onClick={() => handleDelete(member)}
                       disabled={approving[member.docId] || deleting[member.docId]}
-                      className="mt-5 px-4 py-2 rounded-lg text-sm font-medium border border-brand-border text-brand-gray hover:border-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
+                      className="btn-ghost h-11 hover:!border-red-300 hover:!text-red-600"
+                      aria-label={`Delete ${member.fullName}`}
                     >
-                      {deleting[member.docId] ? "Deleting…" : "Delete"}
+                      <IconTrash className="w-4 h-4" />
+                      <span className="sm:hidden">{deleting[member.docId] ? "Deleting…" : "Delete"}</span>
                     </button>
+                    {rowErrors[member.docId] && (
+                      <p className="sm:col-span-4 text-xs text-red-600">{rowErrors[member.docId]}</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -313,6 +343,6 @@ export default function OnboardingQueuePage() {
           ))}
         </div>
       )}
-    </div>
+    </main>
   );
 }

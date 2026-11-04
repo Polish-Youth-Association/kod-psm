@@ -2,6 +2,9 @@
 
 import React, { useMemo, useState } from "react";
 import { wixApi } from "@/lib/wixApi";
+import { Field, PageHeader, Spinner } from "@/components/field";
+import { useToast } from "@/components/toast";
+import { IconCheck, IconCopy, IconUserPlus } from "@/components/icons";
 
 type VolunteerOnboardingRequest = {
   id: string;
@@ -42,6 +45,8 @@ const statusStyles: Record<VolunteerOnboardingRequest["status"], string> = {
 };
 
 export default function VolunteerOnboardingPage() {
+  const toast = useToast();
+  const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -80,7 +85,7 @@ export default function VolunteerOnboardingPage() {
     setError(null);
 
     if (!canSubmit) {
-      setError("Fill in required fields.");
+      toast("error", "Missing info", "Fill in all required fields.");
       return;
     }
 
@@ -139,6 +144,8 @@ export default function VolunteerOnboardingPage() {
       };
 
       setRequests((prev) => [record, ...prev]);
+      setCopied(false);
+      toast("success", "Volunteer account created", record.suggestedPrimaryEmail);
 
       setForm({
         firstName: "",
@@ -152,156 +159,56 @@ export default function VolunteerOnboardingPage() {
       });
     } catch (err: any) {
       setError(err?.message ?? String(err));
+      toast("error", "Couldn't create the account", err?.message ?? String(err));
     } finally {
       setSubmitting(false);
     }
   }
 
+  async function copyPassword() {
+    if (!lastProvision) return;
+    try {
+      await navigator.clipboard.writeText(lastProvision.tempPassword);
+      setCopied(true);
+    } catch {}
+  }
+
   return (
-    <main className="max-w-5xl mx-auto px-6 py-10">
-      {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-brand-dark mb-2">Volunteer Onboarding</h1>
-        <p className="text-brand-gray text-sm max-w-2xl">
-          Create a request to onboard a new volunteer. This will eventually automate: Google
-          Workspace account creation (<code className="font-mono bg-gray-100 px-1 rounded text-xs">@polishyouth.org</code>),
-          group access, and Slack provisioning.
-        </p>
-      </div>
-
-      {/* Form card */}
-      <section className="bg-white border border-brand-border rounded-2xl p-6 mb-8">
-        <h2 className="text-base font-semibold text-brand-dark mb-5">New request</h2>
-
-        <form onSubmit={submit} className="flex flex-col gap-4">
-          {/* Row: First + Last */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field
-              label="First Name *"
-              value={form.firstName}
-              onChange={(v) => setForm((f) => ({ ...f, firstName: v }))}
-              autoComplete="given-name"
-            />
-            <Field
-              label="Last Name *"
-              value={form.lastName}
-              onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
-              autoComplete="family-name"
-            />
-          </div>
-
-          {/* Row: Birthday + Phone */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field
-              label="Birthday *"
-              value={form.birthday}
-              onChange={(v) => setForm((f) => ({ ...f, birthday: v }))}
-              type="date"
-              autoComplete="bday"
-            />
-            <Field
-              label="Phone Number *"
-              value={form.phoneNumber}
-              onChange={(v) => setForm((f) => ({ ...f, phoneNumber: v }))}
-              type="tel"
-              autoComplete="tel"
-              placeholder="+1 929 266 7551"
-            />
-          </div>
-
-          {/* Row: Personal email + Title */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field
-              label="Personal Email *"
-              value={form.personalEmail}
-              onChange={(v) => setForm((f) => ({ ...f, personalEmail: v }))}
-              placeholder="name@gmail.com"
-              type="email"
-              autoComplete="email"
-            />
-            <Field
-              label="Title *"
-              value={form.title}
-              onChange={(v) => setForm((f) => ({ ...f, title: v }))}
-              placeholder="Events / Marketing / Tech..."
-            />
-          </div>
-
-          {/* Row: Start date + Suggested email */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field
-              label="Start Date (optional)"
-              value={form.startDate}
-              onChange={(v) => setForm((f) => ({ ...f, startDate: v }))}
-              type="date"
-            />
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Suggested PSM Email
-              </span>
-              <div
-                className="h-10 flex items-center px-3 rounded-lg border border-brand-border bg-gray-50 text-sm text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap"
-                title={suggestedPrimaryEmail || ""}
-              >
-                {suggestedPrimaryEmail || "—"}
-              </div>
-            </label>
-          </div>
-
-          {/* Notes */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Notes (optional)
-            </span>
-            <textarea
-              value={form.notes}
-              placeholder="Anything the admin should know..."
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              rows={4}
-              className="px-3 py-2 rounded-lg border border-brand-border text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red"
-            />
-          </label>
-
-          {/* Submit row */}
-          <div className="flex items-center gap-4 pt-1">
-            <button
-              type="submit"
-              disabled={!canSubmit || submitting}
-              className="px-5 py-2.5 rounded-lg bg-brand-red text-white text-sm font-semibold hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {submitting ? "Submitting..." : "Submit request"}
-            </button>
-            <span className="text-xs text-brand-gray">* required</span>
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-600 whitespace-pre-wrap">{error}</p>
-          )}
-        </form>
-      </section>
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <PageHeader eyebrow="Volunteers" title="Volunteer Onboarding">
+        Creates the volunteer&apos;s <span className="font-mono text-sm text-brand-ink">@polishyouth.org</span> Google
+        Workspace account, sets their Gmail signature, emails their login details, and kicks off the Slack
+        DocuSign workflow.
+      </PageHeader>
 
       {/* One-time temp password reveal (fallback if the emailed copy fails) */}
       {lastProvision && (
-        <section className="mb-8 p-5 bg-green-50 border border-green-200 rounded-2xl">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-sm font-semibold text-green-800 mb-1">
-                Account created: <span className="font-mono">{lastProvision.email}</span>
-              </p>
-              <p className="text-sm text-green-800">
-                Temporary password:{" "}
-                <code className="font-mono bg-white border border-green-200 rounded px-2 py-0.5">
+        <section className="mb-8 relative overflow-hidden rounded-3xl p-6 sm:p-7 text-white bg-gradient-to-br from-emerald-600 to-teal-500 shadow-[0_20px_40px_-20px_rgba(5,150,105,0.7)] animate-fade-up">
+          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80 mb-1">Account created</p>
+              <p className="text-lg font-bold font-mono break-all">{lastProvision.email}</p>
+              <div className="mt-4 flex items-center gap-2 flex-wrap">
+                <code className="font-mono text-sm bg-white/15 border border-white/25 rounded-lg px-3 py-1.5 break-all">
                   {lastProvision.tempPassword}
                 </code>
-              </p>
-              <p className="text-xs text-green-700 mt-2">
-                Shown only once — it is also emailed to the volunteer&apos;s personal address. If that
-                email fails, copy it now. The volunteer must change it at first login.
+                <button
+                  onClick={copyPassword}
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white text-emerald-700 text-sm font-semibold hover:bg-emerald-50 transition-colors"
+                >
+                  {copied ? <IconCheck className="w-4 h-4" /> : <IconCopy className="w-4 h-4" />}
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <p className="text-xs text-white/85 mt-3 max-w-xl">
+                Shown only once. It&apos;s also emailed to the volunteer&apos;s personal address; if that email
+                fails, this is the only copy. They must change it at first login.
               </p>
             </div>
             <button
               onClick={() => setLastProvision(null)}
-              className="px-3 py-1.5 rounded-lg border border-green-300 text-xs text-green-800 hover:bg-green-100 transition-colors"
+              className="h-9 px-3 rounded-lg border border-white/40 text-xs font-semibold hover:bg-white/10 transition-colors"
             >
               Dismiss
             </button>
@@ -309,110 +216,138 @@ export default function VolunteerOnboardingPage() {
         </section>
       )}
 
+      {/* Form card */}
+      <section className="card p-6 sm:p-8 mb-8 animate-fade-up" style={{ animationDelay: "80ms" }}>
+        <form onSubmit={submit} className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <Field
+              label="First name"
+              required
+              value={form.firstName}
+              onChange={(v) => setForm((f) => ({ ...f, firstName: v }))}
+              autoComplete="given-name"
+            />
+            <Field
+              label="Last name"
+              required
+              value={form.lastName}
+              onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
+              autoComplete="family-name"
+            />
+            <Field
+              label="Birthday"
+              required
+              value={form.birthday}
+              onChange={(v) => setForm((f) => ({ ...f, birthday: v }))}
+              type="date"
+              autoComplete="bday"
+            />
+            <Field
+              label="Phone number"
+              required
+              value={form.phoneNumber}
+              onChange={(v) => setForm((f) => ({ ...f, phoneNumber: v }))}
+              type="tel"
+              autoComplete="tel"
+              placeholder="+1 929 266 7551"
+            />
+            <Field
+              label="Personal email"
+              required
+              value={form.personalEmail}
+              onChange={(v) => setForm((f) => ({ ...f, personalEmail: v }))}
+              placeholder="name@gmail.com"
+              type="email"
+              autoComplete="email"
+              hint="Login details are sent here"
+            />
+            <Field
+              label="Title"
+              required
+              value={form.title}
+              onChange={(v) => setForm((f) => ({ ...f, title: v }))}
+              placeholder="Events / Marketing / Tech…"
+            />
+            <Field
+              label="Start date"
+              value={form.startDate}
+              onChange={(v) => setForm((f) => ({ ...f, startDate: v }))}
+              type="date"
+            />
+            <div className="flex flex-col gap-1.5">
+              <span className="field-label">New PSM email</span>
+              <div
+                className={[
+                  "h-11 flex items-center px-3.5 rounded-xl border text-sm font-mono overflow-hidden text-ellipsis whitespace-nowrap transition-colors",
+                  suggestedPrimaryEmail
+                    ? "border-brand-red/30 bg-brand-red-light/60 text-brand-red"
+                    : "border-dashed border-gray-300 text-gray-400",
+                ].join(" ")}
+                title={suggestedPrimaryEmail || ""}
+              >
+                {suggestedPrimaryEmail || "first.last@polishyouth.org"}
+              </div>
+            </div>
+          </div>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="field-label">Notes</span>
+            <textarea
+              value={form.notes}
+              placeholder="Anything the admin should know…"
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              rows={3}
+              className="field-input h-auto py-2.5 resize-y"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+            <button type="submit" disabled={!canSubmit || submitting} className="btn-primary w-full sm:w-auto">
+              {submitting ? <Spinner /> : <IconUserPlus className="w-4 h-4" />}
+              {submitting ? "Creating account…" : "Create volunteer account"}
+            </button>
+            <span className="text-xs text-gray-500">
+              <span className="text-brand-red">*</span> required
+            </span>
+          </div>
+
+          {error && <p className="text-sm text-red-600 whitespace-pre-wrap">{error}</p>}
+        </form>
+      </section>
+
       {/* Recent requests */}
-      <section className="bg-white border border-brand-border rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-brand-border">
-          <h2 className="text-base font-semibold text-brand-dark">Recent requests</h2>
+      <section className="card overflow-hidden animate-fade-up" style={{ animationDelay: "160ms" }}>
+        <div className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between">
+          <h2 className="text-base font-bold text-brand-ink">Created this session</h2>
+          {requests.length > 0 && <span className="badge bg-gray-100 text-gray-700">{requests.length}</span>}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[1100px]">
-            <thead>
-              <tr className="bg-gray-50">
-                {[
-                  "Created",
-                  "Request ID",
-                  "Name",
-                  "Personal Email",
-                  "Title",
-                  "Start Date",
-                  "Suggested PSM Email",
-                  "Status"
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-brand-border"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {requests.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-sm text-brand-gray text-center">
-                    No requests yet. Submit a request above to get started.
-                  </td>
-                </tr>
-              ) : (
-                requests.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {new Date(r.createdAt).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-mono text-brand-gray border-b border-brand-border whitespace-nowrap">
-                      {r.id}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap font-medium">
-                      {r.firstName} {r.lastName}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {r.personalEmail}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {r.title}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-brand-dark border-b border-brand-border whitespace-nowrap">
-                      {r.startDate || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-mono text-brand-gray border-b border-brand-border whitespace-nowrap">
-                      {r.suggestedPrimaryEmail}
-                    </td>
-                    <td className="px-4 py-3 border-b border-brand-border whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[r.status]}`}
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        {requests.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center">
+              <IconUserPlus className="w-6 h-6" />
+            </div>
+            <p className="text-sm text-gray-500">No accounts yet. New volunteers show up here.</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-black/[0.06]">
+            {requests.map((r) => (
+              <li key={r.id} className="px-6 py-4 flex items-center gap-4 animate-fade-up">
+                <div className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white font-bold flex items-center justify-center">
+                  {r.firstName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-brand-ink truncate">
+                    {r.firstName} {r.lastName} <span className="font-medium text-gray-500">· {r.title}</span>
+                  </p>
+                  <p className="text-xs text-gray-500 truncate font-mono">{r.suggestedPrimaryEmail}</p>
+                </div>
+                <span className={`badge ${statusStyles[r.status]}`}>{r.status}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type,
-  autoComplete
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: React.HTMLInputTypeAttribute;
-  autoComplete?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
-      <input
-        value={value}
-        placeholder={placeholder}
-        type={type ?? "text"}
-        autoComplete={autoComplete}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-10 px-3 rounded-lg border border-brand-border text-sm focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red"
-      />
-    </label>
   );
 }

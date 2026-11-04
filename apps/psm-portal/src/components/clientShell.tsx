@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { TopNav } from "./topNav";
+import { ToastProvider } from "./toast";
 import { AiSidebar } from "./aiSidebar";
 import { UserContext, type Message } from "./userContext";
 import { initGoogleAuth, renderSignInButton, getCurrentEmail } from "@/lib/googleAuth";
@@ -48,19 +49,51 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   }, [messages, storageKey]);
 
   useEffect(() => {
-    if (pathname === "/chat") setAiOpen(false);
+    if (pathname.replace(/\/+$/, "") === "/chat") setAiOpen(false);
   }, [pathname]);
 
   // Auth gate: block the app until a @polishyouth.org account is signed in.
   if (authReady && !userEmail) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="bg-white border border-brand-border rounded-2xl shadow-sm px-8 py-10 flex flex-col items-center gap-5 max-w-sm text-center">
-          <h1 className="text-xl font-bold text-brand-dark">PSM Portal</h1>
-          <p className="text-sm text-brand-gray">
-            Sign in with your <span className="font-medium">@polishyouth.org</span> Google account to continue.
-          </p>
-          <div ref={signInRef} />
+      <div className="relative min-h-screen grid lg:grid-cols-2">
+        <Aurora />
+        {/* Brand panel */}
+        <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-red via-[#d4163a] to-brand-rose p-12 text-white">
+          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/20 to-transparent" />
+          <p className="relative text-sm font-semibold tracking-[0.2em] uppercase text-white/80">Polskie Stowarzyszenie Młodzieży</p>
+          <div className="relative">
+            <h2 className="text-5xl font-extrabold leading-[1.05] tracking-tight">
+              Everything PSM,
+              <br />
+              one place.
+            </h2>
+            <p className="mt-5 text-lg text-white/85 max-w-md">
+              Onboard members and volunteers, work the queue, and ask the assistant, all from here.
+            </p>
+          </div>
+          <p className="relative text-xs text-white/70">Staff only · polishyouth.org</p>
+        </div>
+
+        {/* Sign-in card */}
+        <div className="flex items-center justify-center p-6">
+          <div className="card w-full max-w-sm px-8 py-10 flex flex-col items-center gap-6 text-center animate-fade-up">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://static.wixstatic.com/media/d7f1c6_4692e1506cb8406798ac7defaf85bed1~mv2.png"
+              alt="Polish Youth Association"
+              className="h-12 w-auto"
+            />
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-brand-ink">
+                Welcome to <span className="gradient-text">PSM Portal</span>
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">
+                Sign in with your <span className="font-semibold text-brand-ink">@polishyouth.org</span> Google account to continue.
+              </p>
+            </div>
+            <div ref={signInRef} className="min-h-[44px]" />
+          </div>
         </div>
       </div>
     );
@@ -68,6 +101,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
 
   return (
     <UserContext.Provider value={{ userEmail, messages, setMessages }}>
+     <ToastProvider>
+      <Aurora />
       <div className="flex h-screen overflow-hidden">
         {/* Main content — shrinks when sidebar opens */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -77,15 +112,30 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
 
-        {/* Sidebar — animates width to push content left */}
+        {/* Sidebar: pushes content left on desktop, slides over it full-width on phones. */}
         <div
-          className="shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out"
-          style={{ width: aiOpen ? "420px" : "0px" }}
+          className={[
+            "overflow-hidden transition-[width,transform] duration-300 ease-in-out",
+            "fixed inset-y-0 right-0 z-40 w-full sm:w-[420px] lg:static lg:shrink-0",
+            aiOpen ? "translate-x-0 lg:w-[420px]" : "translate-x-full lg:translate-x-0 lg:w-0",
+          ].join(" ")}
           inert={!aiOpen}
         >
           <AiSidebar open={aiOpen} onClose={() => setAiOpen(false)} />
         </div>
       </div>
+     </ToastProvider>
     </UserContext.Provider>
+  );
+}
+
+/** Slow drifting colour blobs behind the app (decorative). */
+function Aurora() {
+  return (
+    <div className="aurora" aria-hidden="true">
+      <span className="w-[42rem] h-[42rem] -top-60 -left-40 bg-brand-red/[0.07]" />
+      <span className="w-[36rem] h-[36rem] top-1/3 -right-48 bg-brand-rose/[0.08]" style={{ animationDelay: "-6s" }} />
+      <span className="w-[30rem] h-[30rem] -bottom-40 left-1/3 bg-amber-300/[0.08]" style={{ animationDelay: "-12s" }} />
+    </div>
   );
 }

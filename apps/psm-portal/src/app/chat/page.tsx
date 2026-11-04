@@ -4,6 +4,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useUser } from "@/components/userContext";
 import { wixApi } from "@/lib/wixApi";
+import { IconSparkles } from "@/components/icons";
+
+const SUGGESTIONS = [
+  "How do I onboard a new member?",
+  "What does a volunteer get when their account is created?",
+  "Draft a welcome message for new members",
+];
 
 const CONTEXT_WINDOW = 16_384;
 
@@ -66,12 +73,17 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10 flex flex-col" style={{ height: "calc(100vh - 4rem)" }}>
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col" style={{ height: "calc(100dvh - 4rem)" }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-dark">PSM Assistant</h1>
-          <p className="text-brand-gray text-sm">Powered by Llama 3.3 (Groq)</p>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-red to-brand-rose text-white flex items-center justify-center shadow-glow">
+            <IconSparkles className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-brand-ink">PSM Assistant</h1>
+            <p className="text-gray-500 text-sm">Llama 3.3 on Groq</p>
+          </div>
         </div>
         {messages.length > 0 && (
           <button
@@ -86,10 +98,21 @@ export default function ChatPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto flex flex-col gap-4 mb-4 pr-1">
         {messages.length === 0 && !loading && (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-brand-gray text-sm text-center">
-              Ask anything about PSM operations, onboarding, events, or volunteers.
+          <div className="flex-1 flex flex-col items-center justify-center gap-5 animate-fade-up">
+            <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-center text-brand-ink">
+              What can I help with<span className="gradient-text">?</span>
             </p>
+            <div className="flex flex-wrap justify-center gap-2 max-w-xl">
+              {SUGGESTIONS.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => { setInput(q); inputRef.current?.focus(); }}
+                  className="px-4 py-2 rounded-full text-sm bg-white/80 border border-gray-200 text-gray-700 hover:border-brand-red/40 hover:text-brand-red transition-colors"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -102,8 +125,8 @@ export default function ChatPage() {
               className={[
                 "max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-shadow duration-200",
                 m.role === "user"
-                  ? "bg-brand-red text-white rounded-br-sm whitespace-pre-wrap hover:shadow-md"
-                  : "bg-gray-100 text-brand-dark rounded-bl-sm hover:bg-gray-200/70"
+                  ? "bg-gradient-to-br from-brand-red to-brand-rose text-white rounded-br-md whitespace-pre-wrap shadow-glow"
+                  : "bg-white border border-black/[0.06] shadow-card text-brand-dark rounded-bl-md"
               ].join(" ")}
             >
               {m.role === "user" ? m.text : (
@@ -125,7 +148,7 @@ export default function ChatPage() {
 
         {loading && (
           <div className="flex justify-start chat-message-in">
-            <div className="chat-typing bg-gray-100 text-brand-gray px-4 py-3 rounded-2xl rounded-bl-sm text-sm">
+            <div className="chat-typing bg-white border border-black/[0.06] text-brand-gray px-4 py-3 rounded-2xl rounded-bl-sm text-sm">
               <span className="inline-flex gap-1.5 items-center">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-gray animate-bounce" style={{ animationDelay: "0ms" }} />
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-gray animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -144,7 +167,7 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="shrink-0 flex gap-3 items-center border border-brand-border rounded-2xl p-3 focus-within:ring-2 focus-within:ring-brand-red/30 focus-within:border-brand-red transition-colors">
+      <div className="shrink-0 flex gap-3 items-center bg-white border border-gray-200 rounded-2xl shadow-card p-3 focus-within:ring-4 focus-within:ring-brand-red/10 focus-within:border-brand-red transition-colors">
         <span className={`text-xs font-mono shrink-0 ${contextPct >= 90 ? "text-red-500" : contextPct >= 70 ? "text-yellow-500" : "text-brand-gray"}`}>
           {contextPct}%
         </span>
@@ -161,7 +184,7 @@ export default function ChatPage() {
         <button
           onClick={send}
           disabled={!input.trim() || loading}
-          className="px-4 py-2 rounded-xl bg-brand-red text-white text-sm font-semibold hover:bg-brand-red-dark active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 shrink-0"
+          className="px-4 py-2 rounded-xl bg-gradient-to-br from-brand-red to-brand-rose text-white text-sm font-semibold shadow-glow hover:-translate-y-0.5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 shrink-0"
         >
           Send
         </button>
