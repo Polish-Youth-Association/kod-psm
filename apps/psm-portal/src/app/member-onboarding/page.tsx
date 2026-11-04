@@ -134,7 +134,7 @@ export default function MemberOnboardingPage() {
               label="Member ID *"
               value={form.memberId}
               onChange={(v) => setForm((f) => ({ ...f, memberId: v }))}
-              placeholder="PSM-2024-001"
+              placeholder="DNY62120899"
             />
           </div>
 
