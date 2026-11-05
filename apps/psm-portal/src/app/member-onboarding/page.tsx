@@ -86,7 +86,7 @@ export default function MemberOnboardingPage() {
       toast(
         certStatus === "failed" ? "error" : "success",
         certStatus === "failed" ? "Email sent, certificate failed" : "Welcome email sent",
-        `${memberId} → ${form.email.trim()}`
+        certStatus === "failed" && json.certError ? json.certError : `${memberId} → ${form.email.trim()}`
       );
       setForm(EMPTY);
     } catch (err: any) {

@@ -152,7 +152,11 @@ export default function OnboardingQueuePage() {
         ...prev,
         [member.docId]: `Approved · ${data.memberId}`,
       }));
-      toast("success", `${member.fullName} approved`, `Welcome email sent to ${member.email}`);
+      if (data.certStatus === "failed") {
+        toast("error", `${member.fullName} approved, but no certificate`, data.certError ?? "Certificate generation failed.");
+      } else {
+        toast("success", `${member.fullName} approved`, `Welcome email sent to ${member.email}`);
+      }
       fetchLastIds();
       // Remove from list after a short delay
       setTimeout(() => {

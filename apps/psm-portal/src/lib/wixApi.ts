@@ -48,14 +48,14 @@ export const wixApi = {
   recentMemberIds: () => call<RecentMemberIds>("GET", "/memberIds"),
 
   approve: (docId: string, firstNamePolish: string, memberId: string) =>
-    call<{ ok: boolean; memberId?: string; emailSent?: boolean }>("POST", "/approve", {
+    call<{ ok: boolean; memberId?: string; emailSent?: boolean; certStatus?: string; certError?: string | null }>("POST", "/approve", {
       docId,
       firstNamePolish,
       memberId,
     }),
 
   sendMemberEmail: (payload: Record<string, unknown>) =>
-    call<{ ok: boolean; message?: string; certStatus?: string; certUrl?: string }>("POST", "/member", payload),
+    call<{ ok: boolean; message?: string; certStatus?: string; certUrl?: string; certError?: string | null }>("POST", "/member", payload),
 
   provisionVolunteer: (payload: Record<string, unknown>) =>
     call<{ ok: boolean; requestId: string; user: any; tempPassword: string }>("POST", "/volunteer", payload),
