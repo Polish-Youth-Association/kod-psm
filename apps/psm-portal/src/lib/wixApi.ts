@@ -57,7 +57,10 @@ export type CmsPage = {
   ok: boolean;
   view: string;
   label: string;
+  views: { key: string; label: string }[];
   fields: CmsField[];
+  columns: string[];
+  filters: { onboardingStatus?: string[] };
   items: Record<string, any>[];
   total: number;
   page: number;
