@@ -41,6 +41,17 @@ export type RecentMemberIds = {
   driveError?: string;
 };
 
+export type OrgPerson = {
+  email: string;
+  name: string;
+  title: string;
+  titleFull: string;
+  department: string;
+  managerEmail: string | null;
+  orgUnit: string;
+  lastLogin: string | null;
+};
+
 export const wixApi = {
   chat: (history: { role: string; text: string }[], message: string) =>
     call<{ ok: boolean; reply?: string; error?: string }>("POST", "/chat", { history, message }),
@@ -49,6 +60,8 @@ export const wixApi = {
 
   deleteFromQueue: (docId: string) =>
     call<{ ok: boolean }>("DELETE", `/queue?docId=${encodeURIComponent(docId)}`),
+
+  listOrg: () => call<{ ok: boolean; people: OrgPerson[] }>("GET", "/org"),
 
   recentMemberIds: () => call<RecentMemberIds>("GET", "/memberIds"),
 

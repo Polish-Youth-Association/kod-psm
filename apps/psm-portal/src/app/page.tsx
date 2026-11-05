@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useUser } from "@/components/userContext";
-import { IconArrowRight, IconInbox, IconMail, IconSparkles, IconUserPlus } from "@/components/icons";
+import { IconArrowRight, IconInbox, IconMail, IconSparkles, IconUserPlus, IconUsers } from "@/components/icons";
 
 const TOOLS = [
   {
@@ -25,6 +25,13 @@ const TOOLS = [
     body: "Create a volunteer's @polishyouth.org account, set their signature, and send their welcome emails.",
     Icon: IconUserPlus,
     tint: "from-violet-600 to-fuchsia-500",
+  },
+  {
+    href: "/org",
+    title: "Org Chart",
+    body: "Who does what and who reports to whom, straight from Google Workspace. Find anyone's role and email.",
+    Icon: IconUsers,
+    tint: "from-emerald-500 to-teal-400",
   },
   {
     href: "/chat",
@@ -78,7 +85,7 @@ export default function Home() {
             key={href}
             href={href}
             style={{ animationDelay: `${80 + i * 70}ms` }}
-            className="group relative card p-6 overflow-hidden animate-fade-up transition-all duration-300 hover:-translate-y-1 hover:shadow-lift hover:border-brand-red/20"
+            className={`group relative card p-6 overflow-hidden animate-fade-up transition-all duration-300 hover:-translate-y-1 hover:shadow-lift hover:border-brand-red/20 ${i === TOOLS.length - 1 && TOOLS.length % 2 ? "sm:col-span-2" : ""}`}
           >
             {/* Hover glow */}
             <div

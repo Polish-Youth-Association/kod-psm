@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "./userContext";
-import { IconHome, IconInbox, IconMail, IconMenu, IconSparkles, IconUserPlus, IconX } from "./icons";
+import { IconHome, IconInbox, IconMail, IconMenu, IconSparkles, IconUserPlus, IconUsers, IconX } from "./icons";
 
 export const NAV_LINKS = [
   { href: "/", label: "Home", Icon: IconHome },
   { href: "/volunteer-onboarding", label: "Volunteers", Icon: IconUserPlus },
   { href: "/member-onboarding", label: "Members", Icon: IconMail },
   { href: "/onboarding-queue", label: "Queue", Icon: IconInbox },
+  { href: "/org", label: "Org", Icon: IconUsers },
 ];
 
 // trailingSlash export: pathname may come back as "/queue/" — compare without it.
