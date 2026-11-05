@@ -27,6 +27,15 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 }
 
 // Mirrors the old /api/* surface 1:1.
+export type IssuedId = { memberId: string; prefix: string; number: string; issuedAt: string | null };
+export type RecentMemberIds = {
+  ok: boolean;
+  latest: IssuedId | null;
+  recent: IssuedId[];
+  prefixes: { prefix: string; count: number; last: { memberId: string; issuedAt: string | null } }[];
+  driveError?: string;
+};
+
 export const wixApi = {
   chat: (history: { role: string; text: string }[], message: string) =>
     call<{ ok: boolean; reply?: string; error?: string }>("POST", "/chat", { history, message }),
@@ -35,6 +44,8 @@ export const wixApi = {
 
   deleteFromQueue: (docId: string) =>
     call<{ ok: boolean }>("DELETE", `/queue?docId=${encodeURIComponent(docId)}`),
+
+  recentMemberIds: () => call<RecentMemberIds>("GET", "/memberIds"),
 
   approve: (docId: string, firstNamePolish: string, memberId: string) =>
     call<{ ok: boolean; memberId?: string; emailSent?: boolean }>("POST", "/approve", {
