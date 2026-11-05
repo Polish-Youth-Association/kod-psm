@@ -96,9 +96,12 @@ export default function DataPage() {
           </div>
           <p className="text-lg font-bold text-brand-ink">You don&apos;t have access to member data</p>
           <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
-            Member records are limited to Tech, the President and the Memberships team. Ask an admin to add you to
-            cms-viewers@polishyouth.org.
+            Member records are limited to Tech, the President and the Memberships team. If you need them for a task,
+            request temporary access.
           </p>
+          <a href="/access/" className="btn-primary mt-6 inline-flex">
+            Request access
+          </a>
         </div>
       </main>
     );

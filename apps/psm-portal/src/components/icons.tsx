@@ -163,3 +163,12 @@ export const IconLock = (p: IconProps) => (
     <path d="M8 11V7a4 4 0 0 1 8 0v4" />
   </Svg>
 );
+
+export const IconKey = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="7.5" cy="15.5" r="4.5" />
+    <path d="m10.7 12.3 9.8-9.8" />
+    <path d="m15.5 7.5 3 3" />
+    <path d="m18 5 2.5 2.5" />
+  </Svg>
+);
