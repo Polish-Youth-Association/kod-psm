@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "./userContext";
-import { IconHome, IconInbox, IconMail, IconMenu, IconSparkles, IconUserPlus, IconUsers, IconDatabase, IconX } from "./icons";
+import { IconHome, IconInbox, IconMail, IconMenu, IconSparkles, IconUserPlus, IconUsers, IconDatabase, IconKey, IconX } from "./icons";
 
 export const NAV_LINKS = [
   { href: "/", label: "Home", Icon: IconHome },
@@ -13,6 +13,7 @@ export const NAV_LINKS = [
   { href: "/onboarding-queue", label: "Queue", Icon: IconInbox },
   { href: "/org", label: "Org", Icon: IconUsers },
   { href: "/data", label: "Data", Icon: IconDatabase },
+  { href: "/access", label: "Access", Icon: IconKey },
 ];
 
 // trailingSlash export: pathname may come back as "/queue/" — compare without it.

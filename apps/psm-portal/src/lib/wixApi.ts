@@ -67,6 +67,33 @@ export type CmsPage = {
   pageSize: number;
 };
 
+export type VaultRequest = {
+  id: string;
+  requester: string;
+  resource: string;
+  resourceLabel: string;
+  kind: "inbox" | "group" | null;
+  reason: string;
+  hours: number;
+  status: "PENDING" | "ACTIVE" | "EXPIRED" | "REVOKED" | "DENIED" | "CANCELLED";
+  approver: string | null;
+  createdAt: any;
+  decidedAt: any;
+  expiresAt: any;
+  endedAt: any;
+  note: string | null;
+};
+export type VaultState = {
+  ok: boolean;
+  me: string;
+  isApprover: boolean;
+  resources: { id: string; kind: "inbox" | "group"; label: string; target: string }[];
+  durations: number[];
+  mine: VaultRequest[];
+  pending?: VaultRequest[];
+  active?: VaultRequest[];
+};
+
 export const wixApi = {
   chat: (history: { role: string; text: string }[], message: string) =>
     call<{ ok: boolean; reply?: string; error?: string }>("POST", "/chat", { history, message }),
@@ -75,6 +102,9 @@ export const wixApi = {
 
   deleteFromQueue: (docId: string) =>
     call<{ ok: boolean }>("DELETE", `/queue?docId=${encodeURIComponent(docId)}`),
+
+  vault: () => call<VaultState>("GET", "/vault"),
+  vaultAction: (body: Record<string, unknown>) => call<{ ok: boolean; request: VaultRequest }>("POST", "/vault", body),
 
   readCms: (params: Record<string, string | number>) =>
     call<CmsPage>(
