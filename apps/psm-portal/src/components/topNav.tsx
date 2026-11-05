@@ -4,22 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "./userContext";
-import { IconHome, IconInbox, IconMail, IconMenu, IconSparkles, IconUserPlus, IconUsers, IconDatabase, IconKey, IconX } from "./icons";
+import { samePath, sectionOf } from "./sectionTabs";
+import { IconHome, IconMail, IconMenu, IconSparkles, IconUserPlus, IconUsers, IconDatabase, IconKey, IconX } from "./icons";
 
 export const NAV_LINKS = [
   { href: "/", label: "Home", Icon: IconHome },
-  { href: "/volunteer-onboarding", label: "Volunteers", Icon: IconUserPlus },
-  { href: "/member-onboarding", label: "Members", Icon: IconMail },
-  { href: "/onboarding-queue", label: "Queue", Icon: IconInbox },
+  { href: "/listings", label: "Volunteers", Icon: IconUserPlus, section: "volunteers" },
+  { href: "/onboarding-queue", label: "Members", Icon: IconMail, section: "members" },
   { href: "/org", label: "Org", Icon: IconUsers },
   { href: "/data", label: "Data", Icon: IconDatabase },
   { href: "/access", label: "Access", Icon: IconKey },
 ];
 
-// trailingSlash export: pathname may come back as "/queue/" — compare without it.
-function samePath(a: string, b: string) {
-  const norm = (s: string) => (s.length > 1 ? s.replace(/\/+$/, "") : s);
-  return norm(a) === norm(b);
+function isActive(pathname: string, link: { href: string; section?: string }) {
+  return link.section ? sectionOf(pathname) === link.section : samePath(pathname, link.href);
 }
 
 export function TopNav({
@@ -54,8 +52,9 @@ export function TopNav({
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-1 flex-1">
-          {NAV_LINKS.map(({ href, label, Icon }) => {
-            const active = samePath(pathname, href);
+          {NAV_LINKS.map((link) => {
+            const { href, label, Icon } = link;
+            const active = isActive(pathname, link);
             return (
               <Link
                 key={href}
@@ -119,8 +118,9 @@ export function TopNav({
       {menuOpen && (
         <div className="md:hidden border-t border-black/[0.06] px-4 pb-4 pt-2 animate-fade-up">
           <div className="flex flex-col gap-1">
-            {NAV_LINKS.map(({ href, label, Icon }) => {
-              const active = samePath(pathname, href);
+            {NAV_LINKS.map((link) => {
+              const { href, label, Icon } = link;
+              const active = isActive(pathname, link);
               return (
                 <Link
                   key={href}

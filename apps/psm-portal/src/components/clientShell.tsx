@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { TopNav } from "./topNav";
+import { SectionTabs } from "./sectionTabs";
 import { ToastProvider } from "./toast";
 import { AiSidebar } from "./aiSidebar";
 import { UserContext, type Message } from "./userContext";
@@ -121,6 +122,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <TopNav aiOpen={aiOpen} onAiToggle={() => setAiOpen((v) => !v)} />
           <main className="flex-1 overflow-y-auto">
+            <SectionTabs />
             {children}
           </main>
         </div>

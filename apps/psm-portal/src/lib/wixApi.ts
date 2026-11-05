@@ -95,6 +95,47 @@ export type VaultState = {
   active?: VaultRequest[];
 };
 
+export type ListingStatus = "DRAFT" | "OPEN" | "CLOSED";
+export type JobListing = {
+  id: string;
+  title: string;
+  team: string;
+  location: string;
+  commitment: string;
+  summary: string;
+  description: string;
+  requirements: string;
+  ownerEmail: string;
+  status: ListingStatus;
+  createdBy: string;
+  createdAt: any;
+  updatedAt: any;
+  openedAt: any;
+  applicants?: { total: number; NEW: number };
+};
+
+export type ApplicantStatus = "NEW" | "INTERVIEWING" | "ACCEPTED" | "REJECTED";
+export type Applicant = {
+  id: string;
+  listingId: string;
+  listingTitle: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  city: string;
+  school: string;
+  linkedin: string;
+  resumeUrl: string;
+  availability: string;
+  message: string;
+  status: ApplicantStatus;
+  notes: string;
+  statusBy: string;
+  statusAt: any;
+  createdAt: any;
+};
+
 export const wixApi = {
   chat: (history: { role: string; text: string }[], message: string) =>
     call<{ ok: boolean; reply?: string; error?: string }>("POST", "/chat", { history, message }),
@@ -114,6 +155,14 @@ export const wixApi = {
     ),
 
   listOrg: () => call<{ ok: boolean; people: OrgPerson[] }>("GET", "/org"),
+
+  listJobs: () => call<{ ok: boolean; listings: JobListing[] }>("GET", "/jobs"),
+  saveJob: (body: Record<string, unknown>) => call<{ ok: boolean; listing?: JobListing }>("POST", "/jobs", body),
+
+  listApplicants: (listingId?: string) =>
+    call<{ ok: boolean; applicants: Applicant[] }>("GET", `/applicants${listingId ? `?listingId=${encodeURIComponent(listingId)}` : ""}`),
+  updateApplicant: (body: { id: string; status?: ApplicantStatus; notes?: string }) =>
+    call<{ ok: boolean; applicant: Applicant }>("POST", "/applicants", body),
 
   recentMemberIds: () => call<RecentMemberIds>("GET", "/memberIds"),
 
