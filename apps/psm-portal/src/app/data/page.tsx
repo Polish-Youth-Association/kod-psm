@@ -5,14 +5,15 @@ import { wixApi, type CmsPage } from "@/lib/wixApi";
 import { PageHeader } from "@/components/field";
 import { IconChevron, IconLock, IconRefresh, IconSearch, IconX } from "@/components/icons";
 
-// Columns shown in the table; every field is visible in the row's detail panel.
-const TABLE_COLS = ["memberId", "fullName", "email", "city", "state", "onboardingStatus", "_createdDate"];
+// The backend decides which columns each view shows; every allowlisted field is in the detail panel.
 const PAGE_SIZE = 50;
+const SKELETON_COLS = 7;
 
 function fmt(key: string, v: unknown): string {
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "object" && v && "$date" in (v as any)) v = (v as any).$date;
-  if ((key.endsWith("Date") || key.endsWith("At")) && typeof v === "string" && !isNaN(Date.parse(v))) {
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  if ((key.endsWith("Date") || key.endsWith("At") || key.endsWith("Time")) && typeof v === "string" && !isNaN(Date.parse(v))) {
     return new Date(v).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
   }
   if (key === "onboardingStatus") return v === "ONBOARDED" ? "Onboarded" : v === "NOT_ONBOARDED" ? "Pending" : String(v);
@@ -31,8 +32,9 @@ export default function DataPage() {
   const [denied, setDenied] = useState(false);
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
+  const [view, setView] = useState("formEntries");
   const [status, setStatus] = useState("");
-  const [sort, setSort] = useState({ field: "_createdDate", dir: "desc" as "asc" | "desc" });
+  const [sort, setSort] = useState<{ field: string; dir: "asc" | "desc" } | null>(null); // null = view default
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Record<string, any> | null>(null);
   const reqId = useRef(0);
@@ -42,14 +44,22 @@ export default function DataPage() {
     return () => clearTimeout(t);
   }, [q]);
 
-  useEffect(() => setPage(0), [debouncedQ, status, sort]);
+  useEffect(() => setPage(0), [debouncedQ, status, sort, view]);
+
+  function switchView(key: string) {
+    if (key === view) return;
+    setView(key);
+    setStatus("");
+    setSort(null);
+    setSelected(null);
+  }
 
   const load = useCallback(async () => {
     const id = ++reqId.current;
     setLoading(true);
     setError(null);
     try {
-      const res = await wixApi.readCms({ view: "members", q: debouncedQ, status, sort: sort.field, dir: sort.dir, page, pageSize: PAGE_SIZE });
+      const res = await wixApi.readCms({ view, q: debouncedQ, status, sort: sort?.field ?? "", dir: sort?.dir ?? "", page, pageSize: PAGE_SIZE });
       if (id !== reqId.current) return; // a newer request superseded this one
       setData(res);
       setDenied(false);
@@ -61,24 +71,25 @@ export default function DataPage() {
     } finally {
       if (id === reqId.current) setLoading(false);
     }
-  }, [debouncedQ, status, sort, page]);
+  }, [view, debouncedQ, status, sort, page]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const fields = data?.fields ?? [];
-  const cols = TABLE_COLS.map((k) => fields.find((f) => f.key === k)).filter(Boolean) as { key: string; label: string }[];
+  const cols = (data?.columns ?? []).map((k) => fields.find((f) => f.key === k)).filter(Boolean) as { key: string; label: string }[];
+  const isQueue = view === "members";
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
 
   function toggleSort(key: string) {
-    setSort((s) => (s.field === key ? { field: key, dir: s.dir === "asc" ? "desc" : "asc" } : { field: key, dir: "asc" }));
+    setSort((s) => (s?.field === key ? { field: key, dir: s.dir === "asc" ? "desc" : "asc" } : { field: key, dir: "asc" }));
   }
 
   if (denied) {
     return (
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-        <PageHeader eyebrow="Data" title="Members" />
+        <PageHeader eyebrow="Data" title="Member data" />
         <div className="card py-16 px-6 text-center animate-fade-up">
           <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gray-100 text-gray-500 flex items-center justify-center">
             <IconLock className="w-7 h-7" />
@@ -97,7 +108,7 @@ export default function DataPage() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
       <PageHeader
         eyebrow="Data"
-        title="Members"
+        title="Member data"
         action={
           <button onClick={load} disabled={loading} className="btn-ghost self-start sm:self-auto">
             <IconRefresh className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -105,20 +116,43 @@ export default function DataPage() {
           </button>
         }
       >
-        Read-only view of the members collection in Wix. Every view is logged.
+        Read-only view of member records in the Wix CMS. Every view is logged.
         {data && <span className="ml-2 badge bg-brand-red-light text-brand-red align-middle">{data.total} records</span>}
       </PageHeader>
+
+      {/* View tabs */}
+      <div className="mb-4 flex gap-1 p-1 rounded-xl bg-white border border-gray-200 w-fit max-w-full overflow-x-auto animate-fade-up">
+        {(data?.views ?? [{ key: "formEntries", label: "Membership form entries" }, { key: "members", label: "Onboarding queue" }]).map((v) => (
+          <button
+            key={v.key}
+            onClick={() => switchView(v.key)}
+            className={[
+              "px-4 h-9 rounded-lg text-sm font-semibold whitespace-nowrap transition-all",
+              view === v.key ? "text-white bg-gradient-to-br from-brand-red to-brand-rose shadow-glow" : "text-gray-600 hover:text-brand-ink",
+            ].join(" ")}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
 
       <div className="mb-4 flex flex-col sm:flex-row gap-3 animate-fade-up" style={{ animationDelay: "60ms" }}>
         <label className="relative flex-1">
           <IconSearch className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email or member ID" className="field-input pl-10" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={isQueue ? "Search name, email or member ID" : "Search first name, last name or email"}
+            className="field-input pl-10"
+          />
         </label>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="field-input sm:w-48">
-          <option value="">All statuses</option>
-          <option value="ONBOARDED">Onboarded</option>
-          <option value="NOT_ONBOARDED">Pending</option>
-        </select>
+        {data?.filters?.onboardingStatus && (
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className="field-input sm:w-48">
+            <option value="">All statuses</option>
+            <option value="ONBOARDED">Onboarded</option>
+            <option value="NOT_ONBOARDED">Pending</option>
+          </select>
+        )}
       </div>
 
       {error && <div className="mb-4 p-4 rounded-2xl border border-red-200 bg-red-50/80 text-red-700 text-sm">{error}</div>}
@@ -128,11 +162,11 @@ export default function DataPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-black/[0.06] bg-gray-50/80">
-                {(cols.length ? cols : TABLE_COLS.map((k) => ({ key: k, label: k }))).map((c) => (
+                {cols.map((c) => (
                   <th key={c.key} className="text-left font-semibold text-gray-600 px-4 py-3 whitespace-nowrap">
                     <button onClick={() => toggleSort(c.key)} className="inline-flex items-center gap-1 hover:text-brand-ink">
                       {c.label}
-                      {sort.field === c.key && (
+                      {sort?.field === c.key && (
                         <IconChevron className={`w-3.5 h-3.5 ${sort.dir === "asc" ? "-rotate-90" : "rotate-90"}`} />
                       )}
                     </button>
@@ -144,7 +178,7 @@ export default function DataPage() {
               {!data &&
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-black/[0.04]">
-                    {TABLE_COLS.map((k) => (
+                    {Array.from({ length: SKELETON_COLS }).map((_, k) => (
                       <td key={k} className="px-4 py-3">
                         <div className="skeleton h-4 w-24" />
                       </td>
@@ -200,8 +234,10 @@ export default function DataPage() {
           >
             <div className="sticky top-0 bg-white/90 backdrop-blur border-b border-black/[0.06] px-6 py-4 flex items-center justify-between">
               <div className="min-w-0">
-                <p className="text-base font-bold text-brand-ink truncate">{selected.fullName || "Member"}</p>
-                <p className="text-xs font-mono text-gray-500">{selected.memberId || "No member ID yet"}</p>
+                <p className="text-base font-bold text-brand-ink truncate">
+                  {selected.fullName || [selected.firstName, selected.lastName].filter(Boolean).join(" ") || "Member"}
+                </p>
+                <p className="text-xs font-mono text-gray-500">{isQueue ? selected.memberId || "No member ID yet" : data?.label}</p>
               </div>
               <button onClick={() => setSelected(null)} className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center" aria-label="Close">
                 <IconX className="w-4 h-4" />
@@ -216,7 +252,7 @@ export default function DataPage() {
                       <a href={selected[f.key]} target="_blank" rel="noreferrer" className="text-brand-red hover:underline">
                         Open certificate
                       </a>
-                    ) : f.key === "email" && selected[f.key] ? (
+                    ) : (f.key === "email" || f.key === "email2") && selected[f.key] ? (
                       <a href={`mailto:${selected[f.key]}`} className="text-brand-red hover:underline">
                         {selected[f.key]}
                       </a>
