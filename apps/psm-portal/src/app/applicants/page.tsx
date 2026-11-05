@@ -256,6 +256,7 @@ export default function ApplicantsPage() {
                     ["Availability", selected.availability],
                     ["LinkedIn", selected.linkedin && <a href={selected.linkedin} target="_blank" rel="noreferrer" className="text-brand-red hover:underline break-all">{selected.linkedin}</a>],
                     ["Resume", selected.resumeUrl && <a href={selected.resumeUrl} target="_blank" rel="noreferrer" className="text-brand-red hover:underline">Open resume</a>],
+                    ["Cover letter", selected.coverLetterUrl && <a href={selected.coverLetterUrl} target="_blank" rel="noreferrer" className="text-brand-red hover:underline">Open cover letter</a>],
                   ] as [string, React.ReactNode][]
                 ).map(([k, v]) => (
                   <div key={k} className="py-2.5 grid grid-cols-[7rem_1fr] gap-3 text-sm">

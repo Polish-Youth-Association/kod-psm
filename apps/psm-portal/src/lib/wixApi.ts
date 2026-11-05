@@ -127,6 +127,7 @@ export type Applicant = {
   school: string;
   linkedin: string;
   resumeUrl: string;
+  coverLetterUrl?: string;
   availability: string;
   message: string;
   status: ApplicantStatus;
