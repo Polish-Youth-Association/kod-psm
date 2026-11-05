@@ -172,3 +172,18 @@ export const IconKey = (p: IconProps) => (
     <path d="m18 5 2.5 2.5" />
   </Svg>
 );
+
+export const IconBriefcase = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="7" width="18" height="13" rx="2" />
+    <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+    <path d="M3 13h18" />
+  </Svg>
+);
+
+export const IconPlus = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
+  </Svg>
+);

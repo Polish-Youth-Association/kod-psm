@@ -25,11 +25,13 @@ pnpm --filter @kod-psm/psm-portal run build
 | `/volunteer-onboarding` | Form to onboard a new volunteer (creates Google Workspace account, Slack, groups) |
 | `/member-onboarding` | Send a welcome email to a member by hand; the backend generates + attaches their certificate |
 | `/onboarding-queue` | Pending member sign-ups: assign ID, approve (welcome email + certificate) or delete |
+| `/listings` | Volunteer job listings: create, publish/close (open ones show on the public Join Our Team page) |
+| `/applicants` | Applicants per listing: status (new/interviewing/accepted/rejected) + internal notes |
 | `/chat` | PSM assistant, openai/gpt-oss-120b + browser search on Groq via Velo (session-based, history sent with each request) |
 
 ## Backend calls
 
-No API routes. `src/lib/wixApi.ts` calls the Wix Velo `/_functions` endpoints (`chat`, `queue`,
+No API routes. `src/lib/wixApi.ts` calls the Wix Velo `/_functions` endpoints (`chat`, `queue`, `jobs`, `applicants`,
 `approve`, `member`, `volunteer`, `volunteerFinish`) with the Google ID token as a Bearer header.
 The Velo backend source lives in `wix-velo/` at the repo root.
 

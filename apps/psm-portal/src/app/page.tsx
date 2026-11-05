@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useUser } from "@/components/userContext";
-import { IconArrowRight, IconInbox, IconMail, IconSparkles, IconUserPlus, IconUsers } from "@/components/icons";
+import { IconArrowRight, IconBriefcase, IconInbox, IconMail, IconSparkles, IconUserPlus, IconUsers } from "@/components/icons";
 
 const TOOLS = [
   {
@@ -18,6 +18,13 @@ const TOOLS = [
     body: "Send a welcome email to a member by hand, with their membership ID and a generated certificate.",
     Icon: IconMail,
     tint: "from-orange-500 to-amber-400",
+  },
+  {
+    href: "/listings",
+    title: "Job Listings",
+    body: "Post volunteer positions to the Join Our Team page and review who applied.",
+    Icon: IconBriefcase,
+    tint: "from-fuchsia-600 to-pink-500",
   },
   {
     href: "/volunteer-onboarding",
