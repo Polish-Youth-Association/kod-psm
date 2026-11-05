@@ -13,6 +13,7 @@ let currentToken: string | null = null;
 let currentEmail: string | null = null;
 let resolveToken: ((t: string) => void) | null = null;
 let onSignedInCb: ((email: string) => void) | null = null;
+let onExpiredCb: (() => void) | null = null;
 
 // Memoized so the GIS script loads once and initialize() runs once.
 let gisReady: Promise<void> | null = null;
@@ -24,13 +25,22 @@ declare global {
   }
 }
 
-function decodeEmail(idToken: string): string | null {
+function decodePayload(idToken: string): { email?: string; exp?: number } {
   try {
-    const payload = JSON.parse(atob(idToken.split(".")[1]));
-    return payload.email ?? null;
+    return JSON.parse(atob(idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
   } catch {
-    return null;
+    return {};
   }
+}
+
+function decodeEmail(idToken: string): string | null {
+  return decodePayload(idToken).email ?? null;
+}
+
+// Google ID tokens live 1 hour. Treat one as stale 2 minutes early so a request never races expiry.
+function isFresh(idToken: string): boolean {
+  const exp = decodePayload(idToken).exp;
+  return !!exp && exp * 1000 - 2 * 60 * 1000 > Date.now();
 }
 
 function ensureInitialized(): void {
@@ -38,6 +48,8 @@ function ensureInitialized(): void {
   window.google.accounts.id.initialize({
     client_id: CLIENT_ID,
     hosted_domain: HOSTED_DOMAIN,
+    // Lets One Tap re-issue a token silently for a returning user when the old one expires.
+    auto_select: true,
     callback: (resp: { credential: string }) => {
       currentToken = resp.credential;
       currentEmail = decodeEmail(resp.credential);
@@ -67,9 +79,13 @@ function loadGis(): Promise<void> {
   return gisReady;
 }
 
-/** Kick off GIS loading + One Tap prompt. `onSignedIn` fires with the email once signed in. */
-export function initGoogleAuth(onSignedIn?: (email: string) => void): void {
+/**
+ * Kick off GIS loading + One Tap prompt. `onSignedIn` fires with the email on every (re)sign-in;
+ * `onExpired` fires when a request needs a new token, so the UI can offer the sign-in button.
+ */
+export function initGoogleAuth(onSignedIn?: (email: string) => void, onExpired?: () => void): void {
   if (onSignedIn) onSignedInCb = onSignedIn;
+  if (onExpired) onExpiredCb = onExpired;
   loadGis().then(() => window.google.accounts.id.prompt());
 }
 
@@ -90,11 +106,29 @@ export function renderSignInButton(el: HTMLElement): void {
   });
 }
 
-/** Resolve the current ID token, prompting for sign-in if we don't have one yet. */
+/** Forget the cached token (e.g. the backend rejected it) so the next call fetches a new one. */
+export function invalidateIdToken(): void {
+  currentToken = null;
+}
+
+/**
+ * Resolve a fresh ID token. If the cached one is missing or about to expire, ask One Tap for a new
+ * one and tell the shell (onExpired) so it can show the sign-in button in case One Tap is suppressed.
+ * Pending requests resume as soon as the user is signed back in.
+ */
 export function getIdToken(): Promise<string> {
-  if (currentToken) return Promise.resolve(currentToken);
+  if (currentToken && isFresh(currentToken)) return Promise.resolve(currentToken);
+  currentToken = null;
+  const hadSession = !!currentEmail;
   return new Promise<string>((resolve) => {
-    resolveToken = resolve;
-    loadGis().then(() => window.google.accounts.id.prompt());
+    const prev = resolveToken;
+    resolveToken = (t) => {
+      prev?.(t);
+      resolve(t);
+    };
+    loadGis().then(() => {
+      window.google.accounts.id.prompt();
+      if (hadSession) onExpiredCb?.();
+    });
   });
 }

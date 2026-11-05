@@ -7,11 +7,11 @@
 //   https://<your-wix-site>/_functions
 // (Wix also exposes a /_functions-dev base for the sandbox.)
 
-import { getIdToken } from "@/lib/googleAuth";
+import { getIdToken, invalidateIdToken } from "@/lib/googleAuth";
 
 const BASE = (process.env.NEXT_PUBLIC_WIX_FUNCTIONS_BASE || "").replace(/\/$/, "");
 
-async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function call<T>(method: string, path: string, body?: unknown, retried = false): Promise<T> {
   const token = await getIdToken();
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -22,6 +22,11 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const json = await res.json().catch(() => ({}));
+  // Token rejected (expired/revoked between our check and the backend's): get a new one, retry once.
+  if ((res.status === 401 || res.status === 403) && /id token/i.test((json as any)?.error ?? "") && !retried) {
+    invalidateIdToken();
+    return call<T>(method, path, body, true);
+  }
   if (!res.ok) throw new Error((json as any)?.error || `HTTP ${res.status}`);
   return json as T;
 }

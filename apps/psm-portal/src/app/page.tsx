@@ -29,7 +29,7 @@ const TOOLS = [
   {
     href: "/chat",
     title: "PSM Assistant",
-    body: "Ask anything about PSM operations, onboarding, events, or volunteers. Powered by Llama 3.3 on Groq.",
+    body: "Ask anything about PSM operations, onboarding, events, or volunteers. Answers with live web search.",
     Icon: IconSparkles,
     tint: "from-sky-500 to-cyan-400",
   },

@@ -13,14 +13,22 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const signInRef = useRef<HTMLDivElement>(null);
+  const reSignInRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const storageKey = `psm-chat:${userEmail ?? "anonymous"}`;
 
   // Google Sign-In: replaces the old IAP header. The backend (Velo assertPsmStaff) is the real
   // security boundary; this gate is a UX convenience + gives us the user's email.
   useEffect(() => {
-    initGoogleAuth((email) => setUserEmail(email));
+    initGoogleAuth(
+      (email) => {
+        setUserEmail(email);
+        setSessionExpired(false);
+      },
+      () => setSessionExpired(true)
+    );
     setUserEmail(getCurrentEmail());
     setAuthReady(true);
   }, []);
@@ -31,6 +39,11 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
       renderSignInButton(signInRef.current);
     }
   }, [authReady, userEmail]);
+
+  // Session expired mid-use: show the button in an overlay (keeps the page and any typed form intact).
+  useEffect(() => {
+    if (sessionExpired && reSignInRef.current) renderSignInButton(reSignInRef.current);
+  }, [sessionExpired]);
 
   // Load history from sessionStorage after hydration
   useEffect(() => {
@@ -124,6 +137,18 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           <AiSidebar open={aiOpen} onClose={() => setAiOpen(false)} />
         </div>
       </div>
+
+      {sessionExpired && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-6">
+          <div className="card w-full max-w-sm px-8 py-8 flex flex-col items-center gap-4 text-center animate-fade-up">
+            <p className="text-lg font-bold text-brand-ink">Session expired</p>
+            <p className="text-sm text-gray-600">
+              Google sign-ins last an hour. Sign in again and we&apos;ll pick up where you left off.
+            </p>
+            <div ref={reSignInRef} />
+          </div>
+        </div>
+      )}
      </ToastProvider>
     </UserContext.Provider>
   );
