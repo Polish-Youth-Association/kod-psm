@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "./userContext";
-import { IconHome, IconInbox, IconMail, IconMenu, IconSparkles, IconUserPlus, IconUsers, IconX } from "./icons";
+import { IconHome, IconInbox, IconMail, IconMenu, IconSparkles, IconUserPlus, IconUsers, IconDatabase, IconX } from "./icons";
 
 export const NAV_LINKS = [
   { href: "/", label: "Home", Icon: IconHome },
@@ -12,6 +12,7 @@ export const NAV_LINKS = [
   { href: "/member-onboarding", label: "Members", Icon: IconMail },
   { href: "/onboarding-queue", label: "Queue", Icon: IconInbox },
   { href: "/org", label: "Org", Icon: IconUsers },
+  { href: "/data", label: "Data", Icon: IconDatabase },
 ];
 
 // trailingSlash export: pathname may come back as "/queue/" — compare without it.
@@ -58,6 +59,7 @@ export function TopNav({
               <Link
                 key={href}
                 href={href}
+                title={label}
                 className={[
                   "relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200",
                   active
@@ -66,7 +68,7 @@ export function TopNav({
                 ].join(" ")}
               >
                 <Icon className="w-4 h-4" />
-                {label}
+                <span className="hidden lg:inline">{label}</span>
               </Link>
             );
           })}

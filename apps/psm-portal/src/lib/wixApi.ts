@@ -52,6 +52,18 @@ export type OrgPerson = {
   lastLogin: string | null;
 };
 
+export type CmsField = { key: string; label: string };
+export type CmsPage = {
+  ok: boolean;
+  view: string;
+  label: string;
+  fields: CmsField[];
+  items: Record<string, any>[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export const wixApi = {
   chat: (history: { role: string; text: string }[], message: string) =>
     call<{ ok: boolean; reply?: string; error?: string }>("POST", "/chat", { history, message }),
@@ -60,6 +72,12 @@ export const wixApi = {
 
   deleteFromQueue: (docId: string) =>
     call<{ ok: boolean }>("DELETE", `/queue?docId=${encodeURIComponent(docId)}`),
+
+  readCms: (params: Record<string, string | number>) =>
+    call<CmsPage>(
+      "GET",
+      `/cms?${new URLSearchParams(Object.entries(params).filter(([, v]) => v !== "").map(([k, v]) => [k, String(v)]))}`
+    ),
 
   listOrg: () => call<{ ok: boolean; people: OrgPerson[] }>("GET", "/org"),
 
