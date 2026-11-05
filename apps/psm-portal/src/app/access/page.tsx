@@ -295,7 +295,7 @@ export default function AccessPage() {
               {selected && (
                 <p className="text-xs text-gray-500 -mt-2">
                   {selected.kind === "inbox"
-                    ? `Once approved, ${selected.target} appears in your Gmail under your profile picture.`
+                    ? `Once approved, you get an Open inbox button here and a link by email.`
                     : "Once approved, the page unlocks for you within about 5 minutes."}
                 </p>
               )}
@@ -316,13 +316,25 @@ export default function AccessPage() {
                     key={r.id}
                     r={r}
                     actions={
-                      <button
-                        onClick={() => act(r.id, { action: "cancel", id: r.id }, r.status === "ACTIVE" ? "Access ended" : "Request cancelled")}
-                        disabled={!!busy}
-                        className="btn-ghost h-9 px-3 text-xs"
-                      >
-                        {r.status === "ACTIVE" ? "End now" : "Cancel"}
-                      </button>
+                      <>
+                        {r.status === "ACTIVE" && r.kind === "inbox" && r.target && (
+                          <a
+                            href={`https://mail.google.com/mail/b/${r.target}/`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn-primary h-9 px-3 text-xs"
+                          >
+                            Open inbox
+                          </a>
+                        )}
+                        <button
+                          onClick={() => act(r.id, { action: "cancel", id: r.id }, r.status === "ACTIVE" ? "Access ended" : "Request cancelled")}
+                          disabled={!!busy}
+                          className="btn-ghost h-9 px-3 text-xs"
+                        >
+                          {r.status === "ACTIVE" ? "End now" : "Cancel"}
+                        </button>
+                      </>
                     }
                   />
                 ))}

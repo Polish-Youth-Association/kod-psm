@@ -73,6 +73,7 @@ export type VaultRequest = {
   resource: string;
   resourceLabel: string;
   kind: "inbox" | "group" | null;
+  target?: string | null;
   reason: string;
   hours: number;
   status: "PENDING" | "ACTIVE" | "EXPIRED" | "REVOKED" | "DENIED" | "CANCELLED";
