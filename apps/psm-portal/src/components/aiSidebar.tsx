@@ -79,7 +79,7 @@ export function AiSidebar({ open, onClose }: { open: boolean; onClose: () => voi
             </div>
             <div>
               <p className="font-bold text-brand-ink text-sm">PSM Assistant</p>
-              <p className="text-xs text-brand-gray">Llama 3.3 on Groq</p>
+              <p className="text-xs text-brand-gray">GPT-OSS 120B · web search</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

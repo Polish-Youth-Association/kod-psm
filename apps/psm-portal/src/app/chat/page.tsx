@@ -82,7 +82,7 @@ export default function ChatPage() {
           </div>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-brand-ink">PSM Assistant</h1>
-            <p className="text-gray-500 text-sm">Llama 3.3 on Groq</p>
+            <p className="text-gray-500 text-sm">GPT-OSS 120B · web search</p>
           </div>
         </div>
         {messages.length > 0 && (

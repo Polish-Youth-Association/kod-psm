@@ -25,7 +25,7 @@ pnpm --filter @kod-psm/psm-portal run build
 | `/volunteer-onboarding` | Form to onboard a new volunteer (creates Google Workspace account, Slack, groups) |
 | `/member-onboarding` | Send a welcome email to a member by hand; the backend generates + attaches their certificate |
 | `/onboarding-queue` | Pending member sign-ups: assign ID, approve (welcome email + certificate) or delete |
-| `/chat` | PSM assistant, Llama 3.3 on Groq via Velo (session-based, history sent with each request) |
+| `/chat` | PSM assistant, openai/gpt-oss-120b + browser search on Groq via Velo (session-based, history sent with each request) |
 
 ## Backend calls
 
