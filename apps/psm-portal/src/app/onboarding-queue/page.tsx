@@ -46,6 +46,11 @@ const FLAG_LABELS: Record<string, { label: string; tooltip: string; severity: Fl
     tooltip: "Custom fields (Member ID / Certificate URL) didn't update on the Wix contact.",
     severity: "high",
   },
+  no_consent: {
+    label: "No consent",
+    tooltip: "Signed up without agreeing to the Data Collection Agreement. Approve is blocked until they re-submit Join Us.",
+    severity: "high",
+  },
   // Medium severity — likely user-data issues, double-check
   duplicate_email: {
     label: "Possible duplicate email",
