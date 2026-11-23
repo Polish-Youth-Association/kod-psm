@@ -33,7 +33,7 @@ Google Sign-In ID token as a bearer token.
 
 Pages:
 - `/` — home with tool cards
-- `/volunteer-onboarding` — volunteer onboarding form
+- `/volunteer-onboarding` — volunteer onboarding (agreement first, account after signing)
 - `/member-onboarding` — member welcome email form
 - `/onboarding-queue` — pending member queue (approve / delete)
 - `/chat` — AI assistant (Groq via Velo)

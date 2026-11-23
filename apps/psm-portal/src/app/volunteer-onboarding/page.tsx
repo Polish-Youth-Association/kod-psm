@@ -1,23 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { wixApi } from "@/lib/wixApi";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { wixApi, type WorkflowRun } from "@/lib/wixApi";
 import { Field, PageHeader, Spinner } from "@/components/field";
 import { useToast } from "@/components/toast";
-import { IconCheck, IconCopy, IconUserPlus } from "@/components/icons";
-
-type VolunteerOnboardingRequest = {
-  id: string;
-  createdAt: string; // ISO
-  firstName: string;
-  lastName: string;
-  personalEmail: string;
-  title: string;
-  startDate: string; // YYYY-MM-DD or ""
-  notes: string;
-  suggestedPrimaryEmail: string;
-  status: "Draft" | "Submitted" | "Approved" | "Provisioning" | "Completed" | "Rejected";
-};
+import { IconRefresh, IconUserPlus } from "@/components/icons";
 
 function isEmail(s: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -28,25 +15,34 @@ function toEmailLocalPart(first: string, last: string) {
     .trim()
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9.]/g, "")
     .replace(/\.+/g, ".")
     .replace(/^\.+|\.+$/g, "");
   return base || "";
 }
 
-const statusStyles: Record<VolunteerOnboardingRequest["status"], string> = {
-  Draft: "bg-gray-100 text-gray-600",
-  Submitted: "bg-blue-50 text-blue-700",
-  Approved: "bg-green-50 text-green-700",
-  Provisioning: "bg-yellow-50 text-yellow-700",
-  Completed: "bg-emerald-50 text-emerald-700",
-  Rejected: "bg-red-50 text-red-700"
+// Workflow step -> what the admin sees.
+const stepLabels: Record<string, string> = {
+  sendAgreement: "Sending agreement",
+  awaitSignature: "Waiting for signature",
+  createAccount: "Creating account",
+  setSignature: "Setting up mailbox",
+  welcomePsmInbox: "Sending welcome email",
 };
+
+function runBadge(w: WorkflowRun): { label: string; style: string } {
+  if (w.status === "Failed") return { label: "Failed", style: "bg-red-50 text-red-700" };
+  if (w.status === "Done") {
+    if (w.outcome === "Completed") return { label: "Completed", style: "bg-emerald-50 text-emerald-700" };
+    return { label: w.outcome === "Declined" ? "Declined" : "Agreement voided", style: "bg-gray-100 text-gray-600" };
+  }
+  if (w.step === "awaitSignature") return { label: "Awaiting signature", style: "bg-blue-50 text-blue-700" };
+  return { label: w.lastError ? "Retrying" : "In progress", style: "bg-yellow-50 text-yellow-700" };
+}
 
 export default function VolunteerOnboardingPage() {
   const toast = useToast();
-  const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -59,10 +55,24 @@ export default function VolunteerOnboardingPage() {
   });
 
   const [error, setError] = useState<string | null>(null);
-  const [requests, setRequests] = useState<VolunteerOnboardingRequest[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  // Shown once after a successful provision — fallback in case the emailed copy fails.
-  const [lastProvision, setLastProvision] = useState<{ email: string; tempPassword: string } | null>(null);
+  const [runs, setRuns] = useState<WorkflowRun[] | null>(null);
+  const [runsError, setRunsError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);
+
+  const loadRuns = useCallback(async () => {
+    try {
+      const res = await wixApi.listWorkflows("volunteer");
+      setRuns(res.workflows);
+      setRunsError(null);
+    } catch (err: any) {
+      setRunsError(err?.message ?? String(err));
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRuns();
+  }, [loadRuns]);
 
   const suggestedPrimaryEmail = useMemo(() => {
     const local = toEmailLocalPart(form.firstName, form.lastName);
@@ -103,49 +113,17 @@ export default function VolunteerOnboardingPage() {
         suggestedPrimaryEmail
       };
 
+      // Records the request and sends the DocuSign agreement. The account itself is created by the
+      // backend workflow once the volunteer signs.
       const result = await wixApi.provisionVolunteer(payload);
       if (!result?.ok) throw new Error((result as any)?.error ?? "Backend rejected request");
 
-      // Surface the temp password once to the admin — the emailed copy is the primary
-      // channel, but if that fails this is the only other place it exists.
-      setLastProvision({
-        email: result.user?.primaryEmail ?? payload.suggestedPrimaryEmail,
-        tempPassword: result.tempPassword,
-      });
-
-      // Kick off the async tail. Mailbox-independent steps (personal temp-password email,
-      // Slack) run on the first call; mailbox-dependent steps (Gmail signature, PSM-inbox
-      // copy) need Google to finish provisioning the mailbox, so while the backend reports
-      // `pending`, re-call on a backoff. Fire-and-forget; steps are non-fatal + re-entrant.
-      const runFinish = (attempt: number) => {
-        wixApi
-          .finishVolunteer(result.requestId)
-          .then((r) => {
-            if (r?.pending && attempt < 4) {
-              // ~30s, 90s, 180s after the first call — covers typical mailbox init lag.
-              setTimeout(() => runFinish(attempt + 1), attempt === 0 ? 30_000 : 90_000);
-            }
-          })
-          .catch(() => {});
-      };
-      runFinish(0);
-
-      const record: VolunteerOnboardingRequest = {
-        id: result.requestId,
-        createdAt: new Date().toISOString(),
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        personalEmail: payload.personalEmail,
-        title: payload.title,
-        startDate: payload.startDate,
-        notes: payload.notes,
-        suggestedPrimaryEmail: payload.suggestedPrimaryEmail,
-        status: "Submitted"
-      };
-
-      setRequests((prev) => [record, ...prev]);
-      setCopied(false);
-      toast("success", "Volunteer account created", record.suggestedPrimaryEmail);
+      if (result.docusign?.status === "Sent") {
+        toast("success", "Agreement sent", `${payload.personalEmail}. The account is created once they sign.`);
+      } else {
+        toast("error", "Saved, but the agreement didn't send yet", result.docusign?.error ?? "It's retried automatically.");
+      }
+      loadRuns();
 
       setForm({
         firstName: "",
@@ -159,62 +137,31 @@ export default function VolunteerOnboardingPage() {
       });
     } catch (err: any) {
       setError(err?.message ?? String(err));
-      toast("error", "Couldn't create the account", err?.message ?? String(err));
+      toast("error", "Couldn't start onboarding", err?.message ?? String(err));
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function copyPassword() {
-    if (!lastProvision) return;
+  async function retry(id: string) {
+    setRetrying(id);
     try {
-      await navigator.clipboard.writeText(lastProvision.tempPassword);
-      setCopied(true);
-    } catch {}
+      await wixApi.retryWorkflow(id);
+      await loadRuns();
+    } catch (err: any) {
+      toast("error", "Retry failed", err?.message ?? String(err));
+    } finally {
+      setRetrying(null);
+    }
   }
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
       <PageHeader eyebrow="Volunteers" title="Volunteer Onboarding">
-        Creates the volunteer&apos;s <span className="font-mono text-sm text-brand-ink">@polishyouth.org</span> Google
-        Workspace account, sets their Gmail signature, emails their login details, and kicks off the Slack
-        DocuSign workflow.
+        Sends the volunteer agreement through DocuSign. Once they sign, their{" "}
+        <span className="font-mono text-sm text-brand-ink">@polishyouth.org</span> Google Workspace account is created,
+        their login details are emailed and their Gmail signature is set automatically.
       </PageHeader>
-
-      {/* One-time temp password reveal (fallback if the emailed copy fails) */}
-      {lastProvision && (
-        <section className="mb-8 relative overflow-hidden rounded-3xl p-6 sm:p-7 text-white bg-gradient-to-br from-emerald-600 to-teal-500 shadow-[0_20px_40px_-20px_rgba(5,150,105,0.7)] animate-fade-up">
-          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/10 blur-2xl" />
-          <div className="relative flex items-start justify-between gap-4 flex-wrap">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80 mb-1">Account created</p>
-              <p className="text-lg font-bold font-mono break-all">{lastProvision.email}</p>
-              <div className="mt-4 flex items-center gap-2 flex-wrap">
-                <code className="font-mono text-sm bg-white/15 border border-white/25 rounded-lg px-3 py-1.5 break-all">
-                  {lastProvision.tempPassword}
-                </code>
-                <button
-                  onClick={copyPassword}
-                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white text-emerald-700 text-sm font-semibold hover:bg-emerald-50 transition-colors"
-                >
-                  {copied ? <IconCheck className="w-4 h-4" /> : <IconCopy className="w-4 h-4" />}
-                  {copied ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <p className="text-xs text-white/85 mt-3 max-w-xl">
-                Shown only once. It&apos;s also emailed to the volunteer&apos;s personal address; if that email
-                fails, this is the only copy. They must change it at first login.
-              </p>
-            </div>
-            <button
-              onClick={() => setLastProvision(null)}
-              className="h-9 px-3 rounded-lg border border-white/40 text-xs font-semibold hover:bg-white/10 transition-colors"
-            >
-              Dismiss
-            </button>
-          </div>
-        </section>
-      )}
 
       {/* Form card */}
       <section className="card p-6 sm:p-8 mb-8 animate-fade-up" style={{ animationDelay: "80ms" }}>
@@ -259,7 +206,7 @@ export default function VolunteerOnboardingPage() {
               placeholder="name@gmail.com"
               type="email"
               autoComplete="email"
-              hint="Login details are sent here"
+              hint="The agreement and login details are sent here"
             />
             <Field
               label="Title"
@@ -304,7 +251,7 @@ export default function VolunteerOnboardingPage() {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
             <button type="submit" disabled={!canSubmit || submitting} className="btn-primary w-full sm:w-auto">
               {submitting ? <Spinner /> : <IconUserPlus className="w-4 h-4" />}
-              {submitting ? "Creating account…" : "Create volunteer account"}
+              {submitting ? "Sending…" : "Send agreement"}
             </button>
             <span className="text-xs text-gray-500">
               <span className="text-brand-red">*</span> required
@@ -315,36 +262,67 @@ export default function VolunteerOnboardingPage() {
         </form>
       </section>
 
-      {/* Recent requests */}
+      {/* Onboarding runs */}
       <section className="card overflow-hidden animate-fade-up" style={{ animationDelay: "160ms" }}>
-        <div className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between">
-          <h2 className="text-base font-bold text-brand-ink">Created this session</h2>
-          {requests.length > 0 && <span className="badge bg-gray-100 text-gray-700">{requests.length}</span>}
+        <div className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-brand-ink">Onboarding</h2>
+          <button
+            onClick={loadRuns}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-brand-ink"
+          >
+            <IconRefresh className="w-4 h-4" /> Refresh
+          </button>
         </div>
 
-        {requests.length === 0 ? (
+        {runsError ? (
+          <p className="px-6 py-6 text-sm text-red-600">{runsError}</p>
+        ) : runs === null ? (
+          <div className="px-6 py-12 flex justify-center">
+            <Spinner />
+          </div>
+        ) : runs.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center">
               <IconUserPlus className="w-6 h-6" />
             </div>
-            <p className="text-sm text-gray-500">No accounts yet. New volunteers show up here.</p>
+            <p className="text-sm text-gray-500">No volunteers in onboarding yet.</p>
           </div>
         ) : (
           <ul className="divide-y divide-black/[0.06]">
-            {requests.map((r) => (
-              <li key={r.id} className="px-6 py-4 flex items-center gap-4 animate-fade-up">
-                <div className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white font-bold flex items-center justify-center">
-                  {r.firstName.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-brand-ink truncate">
-                    {r.firstName} {r.lastName} <span className="font-medium text-gray-500">· {r.title}</span>
-                  </p>
-                  <p className="text-xs text-gray-500 truncate font-mono">{r.suggestedPrimaryEmail}</p>
-                </div>
-                <span className={`badge ${statusStyles[r.status]}`}>{r.status}</span>
-              </li>
-            ))}
+            {runs.map((w) => {
+              const badge = runBadge(w);
+              const canRetry = w.status === "Failed" || (w.status === "Running" && !!w.lastError);
+              return (
+                <li key={w.id} className="px-6 py-4 flex items-center gap-4">
+                  <div className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white font-bold flex items-center justify-center">
+                    {(w.label || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-brand-ink truncate">{w.label || w.key}</p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {w.status === "Done" ? "Finished" : stepLabels[w.step] ?? w.step}
+                      {" · started "}
+                      {new Date(w.createdAt).toLocaleDateString()}
+                    </p>
+                    {w.lastError && w.status !== "Done" && (
+                      <p className="text-xs text-red-600 truncate" title={w.lastError}>
+                        {w.lastError}
+                      </p>
+                    )}
+                  </div>
+                  {canRetry && (
+                    <button
+                      onClick={() => retry(w.id)}
+                      disabled={retrying === w.id}
+                      className="h-8 px-3 rounded-lg border border-black/10 text-xs font-semibold hover:bg-gray-50"
+                    >
+                      {retrying === w.id ? <Spinner /> : "Retry"}
+                    </button>
+                  )}
+                  <span className={`badge ${badge.style}`}>{badge.label}</span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
