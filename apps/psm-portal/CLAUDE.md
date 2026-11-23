@@ -22,7 +22,7 @@ pnpm --filter @kod-psm/psm-portal run build
 | Route | Description |
 |-------|-------------|
 | `/` | Home — tool cards linking to each feature |
-| `/volunteer-onboarding` | Form to onboard a new volunteer (creates Google Workspace account, Slack, groups) |
+| `/volunteer-onboarding` | Onboard a volunteer: sends the DocuSign agreement; the backend workflow creates the Workspace account once it is signed. Lists onboarding runs with retry |
 | `/member-onboarding` | Send a welcome email to a member by hand; the backend generates + attaches their certificate |
 | `/onboarding-queue` | Pending member sign-ups: assign ID, approve (welcome email + certificate) or delete |
 | `/listings` | Volunteer job listings: create, publish/close (open ones show on the public Join Our Team page) |
@@ -32,7 +32,7 @@ pnpm --filter @kod-psm/psm-portal run build
 ## Backend calls
 
 No API routes. `src/lib/wixApi.ts` calls the Wix Velo `/_functions` endpoints (`chat`, `queue`, `jobs`, `applicants`,
-`approve`, `member`, `volunteer`, `volunteerFinish`) with the Google ID token as a Bearer header.
+`approve`, `member`, `volunteer`, `workflows`) with the Google ID token as a Bearer header.
 The Velo backend source lives in `wix-velo/` at the repo root.
 
 ## Environment Variables

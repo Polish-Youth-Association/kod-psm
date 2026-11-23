@@ -31,6 +31,21 @@ async function call<T>(method: string, path: string, body?: unknown, retried = f
   return json as T;
 }
 
+export type WorkflowRun = {
+  id: string;
+  type: string;
+  key: string;
+  label: string;
+  status: "Running" | "Done" | "Failed";
+  step: string;
+  outcome: string | null;
+  attempts: number;
+  lastError: string | null;
+  nextRunAt: string;
+  createdAt: string;
+  history: { at: string; step: string; result?: string; error?: string }[];
+};
+
 // Mirrors the old /api/* surface 1:1.
 export type IssuedId = { memberId: string; prefix: string; number: string; issuedAt: string | null };
 export type RecentMemberIds = {
@@ -176,9 +191,15 @@ export const wixApi = {
   sendMemberEmail: (payload: Record<string, unknown>) =>
     call<{ ok: boolean; message?: string; certStatus?: string; certUrl?: string; certError?: string | null }>("POST", "/member", payload),
 
+  // Records the request and sends the DocuSign agreement; the account is created once it's signed.
   provisionVolunteer: (payload: Record<string, unknown>) =>
-    call<{ ok: boolean; requestId: string; user: any; tempPassword: string }>("POST", "/volunteer", payload),
+    call<{ ok: boolean; requestId: string; workflowId: string; status: string; primaryEmail: string; docusign: { status: string; error: string | null } }>(
+      "POST",
+      "/volunteer",
+      payload
+    ),
 
-  finishVolunteer: (requestId: string) =>
-    call<{ ok: boolean; pending?: boolean }>("POST", "/volunteerFinish", { requestId }),
+  listWorkflows: (type?: string) =>
+    call<{ ok: boolean; workflows: WorkflowRun[] }>("GET", `/workflows${type ? `?type=${encodeURIComponent(type)}` : ""}`),
+  retryWorkflow: (id: string) => call<{ ok: boolean; workflow: unknown }>("POST", "/workflows", { id }),
 };
